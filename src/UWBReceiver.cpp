@@ -21,11 +21,10 @@ struct sockaddr_in server_addr, client_addr;
 
 class UWBRcv : public rclcpp::Node {
 	public:
-		UWBRcv(int argc, char** argv) : Node("uwb_rcv") {
-			std::vector<std::string> args = rclcpp::remove_ros_arguments(argc, argv);
-			publisher_anc1 = this->create_publisher<example_interfaces::msg::Float64>("anchor1", 10);
-			publisher_anc2 = this->create_publisher<example_interfaces::msg::Float64>("anchor2", 10);
-			publisher_anc3 = this->create_publisher<example_interfaces::msg::Float64>("anchor3", 10);
+		UWBRcv() : Node("uwb_rcv") {
+			publisher_anc1 = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc1", 10);
+			publisher_anc2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc2", 10);
+			publisher_anc3 = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc3", 10);
 			timer_ = this->create_wall_timer(150us, std::bind(&UWBRcv::timer_callback, this));
 			
 			if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
@@ -112,7 +111,7 @@ class UWBRcv : public rclcpp::Node {
 
 int main(int argc, char* argv[]) {
 	rclcpp::init(argc, argv);
-	rclcpp::spin(std::make_shared<UWBRcv>(argc, argv));
+	rclcpp::spin(std::make_shared<UWBRcv>());
 	close(sockfd);
 	rclcpp::shutdown();
 	return 0;

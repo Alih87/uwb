@@ -10,6 +10,9 @@ find_package(ament_cmake REQUIRED)
 find_package(serial REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(example_interfaces REQUIRED)
 
 # uncomment the following section in order to fill in
@@ -25,14 +28,22 @@ ament_target_dependencies(uwb_node rclcpp std_msgs serial example_interfaces)
 add_executable(uwb_rcv src/UWBReceiver.cpp)
 ament_target_dependencies(uwb_rcv rclcpp std_msgs serial example_interfaces)
 
+add_executable(uwb_tf src/uwb_transform.cpp)
+ament_target_dependencies(uwb_tf rclcpp std_msgs nav_msgs tf2_ros serial Eigen3 example_interfaces)
+
 target_link_libraries(uwb_node serial)
 target_link_libraries(uwb_rcv serial)
+target_link_libraries(uwb_tf serial)
 
 install(TARGETS uwb_node
 DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS uwb_rcv
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS uwb_tf
 DESTINATION lib/${PROJECT_NAME}
 )
 
