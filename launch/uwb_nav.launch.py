@@ -32,6 +32,30 @@ def generate_launch_description():
                               description='Specifying whether or not to enable angle compensation'),
         DeclareLaunchArgument('scan_mode', default_value='Sensitivity',
                               description='Specifying scan mode of lidar'),
+        DeclareLaunchArgument('use_sim_time', default_value='false',
+                                             description='Use simulation clock if true'),
+		
+	# Scout_ros2 parameters
+		DeclareLaunchArgument('port_name', default_value='can0',
+											 description='CAN bus name, e.g. can0'),
+		DeclareLaunchArgument('odom_frame', default_value='odom',
+											   description='Odometry frame id'),
+		DeclareLaunchArgument('base_frame', default_value='base_link',
+													description='Base link frame id'),
+		DeclareLaunchArgument('odom_topic_name', default_value='odom',
+											   description='Odometry topic name'),
+
+		DeclareLaunchArgument('is_scout_mini', default_value='false',
+											  description='Scout mini model'),
+		DeclareLaunchArgument('is_omni_wheel', default_value='false',
+											  description='Scout mini omni-wheel model'),
+		DeclareLaunchArgument('auto_reconnect', default_value='true', 
+											  description='Attempts to re-establish CAN command mode'),
+
+		DeclareLaunchArgument('simulated_robot', default_value='false',
+													   description='Whether running with simulator'),
+		DeclareLaunchArgument('control_rate', default_value='50',
+													 description='Simulation control loop update rate')
     ]
 
     # --- RViz config file ---
@@ -64,10 +88,17 @@ def generate_launch_description():
         output='screen'
     )
 
-    uwb_test_node = Node(
+    uwb_rcv_node = Node(
         package='uwb_test',
         executable='uwb_rcv',
         name='uwb_rcv',
+        output='screen'
+    )
+    
+    uwb_tf_node = Node(
+        package='uwb_test',
+        executable='uwb_tf',
+        name='uwb_tf',
         output='screen'
     )
 
@@ -78,11 +109,31 @@ def generate_launch_description():
         arguments=['-d', rviz_config_dir],
         output='screen'
     )
+    
+    scout_base_node = Node(
+        package='scout_base',
+        executable='scout_base_node',
+        output='screen',
+        emulate_tty=True,
+        parameters=[{
+                'use_sim_time': LaunchConfiguration('use_sim_time'),
+                'port_name': LaunchConfiguration('port_name'),                
+                'odom_frame': LaunchConfiguration('odom_frame'),
+                'base_frame': LaunchConfiguration('base_frame'),
+                'odom_topic_name': LaunchConfiguration('odom_topic_name'),
+                'is_scout_mini': LaunchConfiguration('is_scout_mini'),
+                'is_omni_wheel': LaunchConfiguration('is_omni_wheel'),
+                'auto_reconnect': LaunchConfiguration('auto_reconnect'),
+                'simulated_robot': LaunchConfiguration('simulated_robot'),
+                'control_rate': LaunchConfiguration('control_rate'),
+        }])
 
     # --- Return LaunchDescription ---
     return LaunchDescription(declare_args + [
         umx_driver_node,
         rplidar_ros_node,
-        uwb_test_node,
+        uwb_rcv_node,
+        uwb_tf_node,
+        scout_base_node,
         rviz2_lidar_node
     ])

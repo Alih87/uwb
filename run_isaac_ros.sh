@@ -4,6 +4,7 @@ CONTAINER_NAME=isaac_ros_dev_rviz_1
 IMAGE_ID=9b7fd6fc440e
 WORKSPACE_DIR=/home/uwb/ws/isaac_ros-dev
 
+sudo modprobe gs_usb
 xhost +local:root >/dev/null 2>&1 || true
 
 if ! sudo docker container inspect "$CONTAINER_NAME" > /dev/null 2>&1; then
