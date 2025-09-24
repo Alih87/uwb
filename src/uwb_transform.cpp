@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <tf2_ros/static_transform_broadcaster.h>
+#include <tf2_ros/transform_broadcaster.h>
 #include <example_interfaces/msg/float64.hpp>
 #include <memory>
 #include <chrono>
@@ -49,6 +50,8 @@ class UWBTransform : public rclcpp::Node {
 			static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
 			static_broadcaster_->sendTransform(anc_tf);
 			
+			tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+			
 			// This was done to just get the vertices for the three anchor positions on the rover. They were later adjusted to align (as much as we can) to the UGV center.
 			//std::cout << computeTriangle(0.875, 0.86, 0.871) << std::endl;
 			}
@@ -57,9 +60,10 @@ class UWBTransform : public rclcpp::Node {
 		std::mutex data_mutex;
 		nav_msgs::msg::Odometry uwb_odom_msg;
 		geometry_msgs::msg::TransformStamped anc_tf;
+		geometry_msgs::msg::TransformStamped tag_tf;
 	
 		double x1 = -0.4375, y1 = 0.3733615;     // left-front   // distance 1   // dtl-dtr = 87.5cm
-		double x2 = 0.4375, y2 =  0.3733615;     // right-front  // distance 3	 // dtl-dbc = 86cm
+		double x2 = 0.4375, y2 =  0.3733615;     // right-front  // distance 2	 // dtl-dbc = 86cm
 		double x3 = -0.010881, y3 = -0.3733615;  // rear-center  // distance 0   // dtr-dbc = 87.1cm
 		double d1 = 0.0, d2 = 0.0, d3 = 0.0;
 		double uwb_center_x = (x1 + x2 + x3) / 3, uwb_center_y = (y1 + y2 + y3) / 3;
@@ -77,6 +81,7 @@ class UWBTransform : public rclcpp::Node {
 		Eigen::Vector2d b, pos;
 		
 		std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_broadcaster_;
+		std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 		
 		void common_anc_callback(int id, const example_interfaces::msg::Float64::SharedPtr msg) {
 			std::lock_guard<std::mutex> lock(data_mutex);
@@ -139,20 +144,27 @@ class UWBTransform : public rclcpp::Node {
 			q = this->calculateYaw(pos[0], pos[1]);
 			
 			uwb_odom_msg.header.stamp = this->get_clock()->now();
+			tag_tf.header.stamp = uwb_odom_msg.header.stamp;
 			
 			uwb_odom_msg.header.frame_id = "anchor_link";
 			uwb_odom_msg.child_frame_id  = "tag_link";
+			tag_tf.header.frame_id = "anchor_link";
+			tag_tf.child_frame_id = "tag_link";
 			
 			// Translation
 			uwb_odom_msg.pose.pose.position.x = pos[0];
 			uwb_odom_msg.pose.pose.position.y = pos[1];
-			uwb_odom_msg.pose.pose.position.z = 0;
+			uwb_odom_msg.pose.pose.position.z = 0.0;
+			tag_tf.transform.translation.x = pos[0];
+			tag_tf.transform.translation.y = pos[1];
+			tag_tf.transform.translation.z = 0;
 			
 			// Tag orientation wrt the uwb anchor positions (x1,y1),(x2,y2) and (x3,y3)
 			uwb_odom_msg.pose.pose.orientation.x = q.x();
 			uwb_odom_msg.pose.pose.orientation.y = q.y();
 			uwb_odom_msg.pose.pose.orientation.z = q.z();
 			uwb_odom_msg.pose.pose.orientation.w = q.w();
+			tag_tf.transform.rotation = uwb_odom_msg.pose.pose.orientation;
 			
 			uwb_odom_msg.twist.twist.linear.x = 0;
 			uwb_odom_msg.twist.twist.linear.y = 0;
@@ -176,6 +188,7 @@ class UWBTransform : public rclcpp::Node {
 				};
 			
 			publisher_->publish(uwb_odom_msg);
+			tf_broadcaster_->sendTransform(tag_tf);
 			}
 	};
 

@@ -7,6 +7,8 @@ WORKSPACE_DIR=/home/uwb/ws/isaac_ros-dev
 sudo modprobe gs_usb
 xhost +local:root >/dev/null 2>&1 || true
 
+sudo ip link set can1 up type can bitrate 500000
+
 if ! sudo docker container inspect "$CONTAINER_NAME" > /dev/null 2>&1; then
 	echo "Creating new container:  $CONTAINER_NAME"
 	sudo docker run -it -d \

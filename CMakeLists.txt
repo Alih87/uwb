@@ -31,9 +31,13 @@ ament_target_dependencies(uwb_rcv rclcpp std_msgs serial example_interfaces)
 add_executable(uwb_tf src/uwb_transform.cpp)
 ament_target_dependencies(uwb_tf rclcpp std_msgs nav_msgs tf2_ros serial Eigen3 example_interfaces)
 
+add_executable(dynamic_tf_pub src/dynamic_transforms_pub.cpp)
+ament_target_dependencies(dynamic_tf_pub rclcpp std_msgs nav_msgs tf2_ros serial)
+
 target_link_libraries(uwb_node serial)
 target_link_libraries(uwb_rcv serial)
 target_link_libraries(uwb_tf serial)
+target_link_libraries(dynamic_tf_pub serial)
 
 install(TARGETS uwb_node
 DESTINATION lib/${PROJECT_NAME}
@@ -44,6 +48,10 @@ DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS uwb_tf
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS dynamic_tf_pub
 DESTINATION lib/${PROJECT_NAME}
 )
 

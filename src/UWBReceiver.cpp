@@ -100,7 +100,7 @@ class UWBRcv : public rclcpp::Node {
 			publisher_anc3->publish(msg);
 			
 			buffer[n] = '\0';
-			//std::cout << std::string(buffer) << std::endl;
+			std::cout << std::string(buffer) << std::endl;
 				}
 	
 		rclcpp::TimerBase::SharedPtr timer_;
