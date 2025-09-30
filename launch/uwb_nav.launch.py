@@ -50,12 +50,12 @@ def generate_launch_description():
 											  description='Scout mini model'),
 		DeclareLaunchArgument('is_omni_wheel', default_value='false',
 											  description='Scout mini omni-wheel model'),
-		DeclareLaunchArgument('auto_reconnect', default_value='false', 
+		DeclareLaunchArgument('auto_reconnect', default_value='true', 
 											  description='Attempts to re-establish CAN command mode'),
 
 		DeclareLaunchArgument('simulated_robot', default_value='false',
 													   description='Whether running with simulator'),
-		DeclareLaunchArgument('control_rate', default_value='50',
+		DeclareLaunchArgument('control_rate', default_value='30',
 													 description='Simulation control loop update rate')
     ]
 
@@ -137,6 +137,13 @@ def generate_launch_description():
         }],
         respawn=True,
         respawn_delay=2.0)
+        
+    config_directory = os.path.join(get_package_share_directory('ublox_gps'),'config')
+    params = os.path.join(config_directory, 'zed_f9p.yaml')
+    ublox_gps_node = Node(package='ublox_gps',
+							 executable='ublox_gps_node',
+							 output='screen',
+							 parameters=[params])
      
     static_base_imu = Node(
 		package="tf2_ros",
@@ -149,7 +156,7 @@ def generate_launch_description():
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_tf_lidar",
-		arguments=['0.275','0.0','0.0','0.0','0.0','0.0','base_link','laser']
+		arguments=['0.275','0.0','0.0','0.0','3.14','3.14','base_link','laser']
 	)
 	   
     delayed_scout = TimerAction(
@@ -159,13 +166,14 @@ def generate_launch_description():
 
     # --- Return LaunchDescription ---
     return LaunchDescription(declare_args + [
+        delayed_scout,
         static_base_imu,
         static_base_lidar,
+        ublox_gps_node,
         umx_driver_node,
         rplidar_ros_node,
         uwb_rcv_node,
         uwb_tf_node,
-        dynamic_tf_node,
-        rviz2_lidar_node,
-        delayed_scout
+        #dynamic_tf_node,
+        rviz2_lidar_node
     ])
