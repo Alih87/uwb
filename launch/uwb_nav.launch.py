@@ -158,6 +158,13 @@ def generate_launch_description():
 		name="static_tf_lidar",
 		arguments=['0.275','0.0','0.0','0.0','3.14','3.14','base_link','laser']
 	)
+	
+    static_base_gnss = Node(
+		package="tf2_ros",
+		executable="static_transform_publisher",
+		name="static_tf_gnss",
+		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','base_link','gps']
+	)
 	   
     delayed_scout = TimerAction(
 	period=7.0,
@@ -169,6 +176,7 @@ def generate_launch_description():
         delayed_scout,
         static_base_imu,
         static_base_lidar,
+        static_base_gnss,
         ublox_gps_node,
         umx_driver_node,
         rplidar_ros_node,

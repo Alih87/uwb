@@ -90,12 +90,15 @@ class UWBRcv : public rclcpp::Node {
 			//print_vector(float_dist);
 			example_interfaces::msg::Float64 msg;
 
+			//msg.data = float_dist[0] - 0.44;
 			msg.data = float_dist[0];
 			publisher_anc1->publish(msg);
 
+			//msg.data = float_dist[1] - 0.44;
 			msg.data = float_dist[1];
 			publisher_anc2->publish(msg);
 
+			//msg.data = float_dist[2] - 0.26;
 			msg.data = float_dist[2];
 			publisher_anc3->publish(msg);
 			

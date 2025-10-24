@@ -61,6 +61,7 @@ class UWBTransform : public rclcpp::Node {
 		nav_msgs::msg::Odometry uwb_odom_msg;
 		geometry_msgs::msg::TransformStamped anc_tf;
 		geometry_msgs::msg::TransformStamped tag_tf;
+		geometry_msgs::msg::TransformStamped base_tag_tf;
 	
 		double x1 = -0.4375, y1 = 0.3733615;     // left-front   // distance 1   // dtl-dtr = 87.5cm
 		double x2 = 0.4375, y2 =  0.3733615;     // right-front  // distance 2	 // dtl-dbc = 86cm
@@ -140,6 +141,8 @@ class UWBTransform : public rclcpp::Node {
 			
 		void timer_callback() {
 			std::lock_guard<std::mutex> lock(data_mutex);
+			
+			std::vector<geometry_msgs::msg::TransformStamped> transforms;
 			pos = this->calculatePosition();
 			q = this->calculateYaw(pos[0], pos[1]);
 			
