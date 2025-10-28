@@ -10,6 +10,9 @@
 #include <serial/serial.h>
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
 #include <stdexcept>
@@ -20,7 +23,9 @@ using namespace std::chrono_literals;
 
 class UWBTransform : public rclcpp::Node {
 	public:
-		UWBTransform() : Node("uwb_transform") {
+		UWBTransform() : Node("uwb_transform"),
+						buffer_(this->get_clock()),
+						listener_(buffer_) {
 			subscription_anc1 = this->create_subscription<example_interfaces::msg::Float64>(
 							"uwb/d_anc1", 10,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(1, msg);});
@@ -83,6 +88,9 @@ class UWBTransform : public rclcpp::Node {
 		
 		std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_broadcaster_;
 		std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+		
+		tf2_ros::Buffer buffer_;
+		tf2_ros::TransformListener listener_;
 		
 		void common_anc_callback(int id, const example_interfaces::msg::Float64::SharedPtr msg) {
 			std::lock_guard<std::mutex> lock(data_mutex);
@@ -148,11 +156,14 @@ class UWBTransform : public rclcpp::Node {
 			
 			uwb_odom_msg.header.stamp = this->get_clock()->now();
 			tag_tf.header.stamp = uwb_odom_msg.header.stamp;
+			base_tag_tf.header.stamp = uwb_odom_msg.header.stamp;
 			
 			uwb_odom_msg.header.frame_id = "anchor_link";
 			uwb_odom_msg.child_frame_id  = "tag_link";
 			tag_tf.header.frame_id = "anchor_link";
 			tag_tf.child_frame_id = "tag_link";
+			base_tag_tf.header.frame_id = "base_link";
+			base_tag_tf.child_frame_id = "tag_link";
 			
 			// Translation
 			uwb_odom_msg.pose.pose.position.x = pos[0];
@@ -192,7 +203,25 @@ class UWBTransform : public rclcpp::Node {
 			
 			publisher_->publish(uwb_odom_msg);
 			tf_broadcaster_->sendTransform(tag_tf);
+			
+			try {
+				auto base_tag_lookup = buffer_.lookupTransform(
+						"base_link",
+						"tag_link",
+						rclcpp::Time(0)
+						);
+							
+				base_tag_tf.transform.translation.x = base_tag_lookup.transform.translation.x;
+				base_tag_tf.transform.translation.y = base_tag_lookup.transform.translation.y;
+				base_tag_tf.transform.translation.z = base_tag_lookup.transform.translation.z;
+				base_tag_tf.transform.rotation = base_tag_lookup.transform.rotation;
+				
+				tf_broadcaster_->sendTransform(base_tag_tf);
 			}
+			 catch(const tf2::TransformException& ex) {
+				 RCLCPP_WARN(get_logger(), "TF not ready: %s", ex.what());
+				 }
+		}
 	};
 
 int main(int argc, char** argv) {
