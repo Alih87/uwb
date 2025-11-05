@@ -56,7 +56,19 @@ def generate_launch_description():
 		DeclareLaunchArgument('simulated_robot', default_value='false',
 													   description='Whether running with simulator'),
 		DeclareLaunchArgument('control_rate', default_value='30',
-													 description='Simulation control loop update rate')
+													 description='Simulation control loop update rate'),
+													 
+	# UWB Anchor locations
+		DeclareLaunchArgument('anc0', default_value='0.0,0.0',
+													 description='Anchor 1 location (x,y)'),
+		DeclareLaunchArgument('anc1', default_value='0.36,-0.43',
+													 description='Anchor 2 location (x,y)'),
+		DeclareLaunchArgument('anc2', default_value='0.36,0.435',
+													 description='Anchor 3 location (x,y)'),
+		DeclareLaunchArgument('anc3', default_value='0,0',
+													 description='Anchor 4 location (x,y)'),
+		DeclareLaunchArgument('anc4', default_value='0,0',
+													 description='Anchor 5 location (x,y)'),
     ]
 
     # --- RViz config file ---
@@ -100,6 +112,13 @@ def generate_launch_description():
         package='uwb_test',
         executable='uwb_tf',
         name='uwb_tf',
+        parameters=[{
+			'anc0': LaunchConfiguration('anc0'),
+			'anc1': LaunchConfiguration('anc1'),
+			'anc2': LaunchConfiguration('anc2'),
+			'anc3': LaunchConfiguration('anc3'),
+			'anc4': LaunchConfiguration('anc4'),
+        }],
         output='screen'
     )
     
@@ -149,14 +168,14 @@ def generate_launch_description():
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_tf_imu",
-		arguments=['0.355','0.0','0.0','0.0','0.0','0.0','base_link','imu_link']
+		arguments=['0.36','0.0','0.0','0.0','0.0','0.0','base_link','imu_link']
 	)
 	
     static_base_lidar = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_tf_lidar",
-		arguments=['0.275','0.0','0.0','0.0','3.14','3.14','base_link','laser']
+		arguments=['0.285','0.0','0.0','0.0','3.14','3.14','base_link','laser']
 	)
 	
     static_base_gnss = Node(

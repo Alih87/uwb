@@ -1,4 +1,3 @@
-
 #include <rclcpp/rclcpp.hpp>
 #include <example_interfaces/msg/float64.hpp>
 #include <arpa/inet.h>
@@ -19,9 +18,11 @@ public:
   UWBRcv()
   : Node("uwb_rcv")
   {
-    publisher_anc1_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc1", 10);
-    publisher_anc2_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc2", 10);
-    publisher_anc3_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc3", 10);
+    publisher_anc1_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc0", 10);
+    publisher_anc2_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc1", 10);
+    publisher_anc3_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc2", 10);
+    publisher_anc4_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc3", 10);
+    publisher_anc5_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc4", 10);
 
     // --- Create UDP socket ---
     sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -57,7 +58,7 @@ private:
     while (n > 0) {
       buffer[n] = '\0';
       std::string msg(buffer);
-      RCLCPP_INFO(this->get_logger(), "Received: %s", msg.c_str());
+      //RCLCPP_INFO(this->get_logger(), "Received: %s", msg.c_str());
 
       parse_and_publish(msg);
 
@@ -67,8 +68,7 @@ private:
     }
   }
 
-  void parse_and_publish(const std::string &msg)
-  {
+  void parse_and_publish(const std::string &msg) {
     // Expect messages like "distance1:0.74" or "distance3:1.22"
     size_t colon = msg.find(':');
     if (colon == std::string::npos) return;
@@ -79,12 +79,16 @@ private:
       double val = std::stod(val_str);
       example_interfaces::msg::Float64 out;
       out.data = val;
-      if (id.find("1") != std::string::npos)
+      if (id.find("0") != std::string::npos)
         publisher_anc1_->publish(out);
-      else if (id.find("2") != std::string::npos)
+      else if (id.find("1") != std::string::npos)
         publisher_anc2_->publish(out);
-      else if (id.find("3") != std::string::npos)
+      else if (id.find("2") != std::string::npos)
         publisher_anc3_->publish(out);
+      else if (id.find("3") != std::string::npos)
+        publisher_anc4_->publish(out);
+      else if (id.find("4") != std::string::npos)
+        publisher_anc5_->publish(out);
     } catch (...) {
       RCLCPP_WARN(this->get_logger(), "Parse error on message: %s", msg.c_str());
     }
@@ -95,6 +99,8 @@ private:
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc1_;
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc2_;
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc3_;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc4_;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc5_;
 };
 
 int main(int argc, char *argv[])
