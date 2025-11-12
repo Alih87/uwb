@@ -18,6 +18,7 @@
 #include <stdexcept>
 #include <mutex>
 #include <cmath>
+#include <optional>
 
 using namespace std::chrono_literals;
 
@@ -169,10 +170,13 @@ class UWBTransform : public rclcpp::Node {
 		double x4 = 0.0, y4 = 0.0;
 		double x5 = 0.0, y5 = 0.0; 
 		double d1 = 0.0, d2 = 0.0, d3 = 0.0, d4 = 0.0, d5 = 0.0;
+		double d2_prev = 0.0, d3_prev = 0.0;
 		//double uwb_center_x = (x1 + x2 + x3) / 3, uwb_center_y = (y1 + y2 + y3) / 3;
 		double static_center_x = 0.0, static_center_y = 0.0;
 		double dynamic_center_x = 0.0, dynamic_center_y = 0.0;
 		Eigen::Quaterniond q;
+		std::optional<int> sign;
+		std::optional<int> sign_prev;
 		
 		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_;
 		rclcpp::TimerBase::SharedPtr timer_;
@@ -201,7 +205,58 @@ class UWBTransform : public rclcpp::Node {
 			if (id == 4) d4 = msg->data;
 			if (id == 5) d5 = msg->data;
 			}
-			
+		
+		std::optional<int> pickInitialSignEigen(
+				const Eigen::Vector2d& A1,   // anchor 1 position
+				const Eigen::Vector2d& A2,   // anchor 2 position
+				const Eigen::Vector2d& candAbs, // candidate (x, |y|) at t0 (in anchor frame)
+				double r1_0, double r2_0,    // ranges at t0
+				double r1_1, double r2_1,    // ranges at t1
+				double max_motion = 1.5      // reject if implied motion > 2 m
+				)
+			{
+				Eigen::Vector2d dR(r1_1 - r1_0, r2_1 - r2_0);
+				int best_sign = 0;
+				double best_err = std::numeric_limits<double>::max();
+
+				for (int sgn : {+1, -1}) {
+					Eigen::Vector2d p0(candAbs.x(), sgn * candAbs.y());
+
+					// Unit line-of-sight vectors to each anchor
+					Eigen::Vector2d u1 = p0 - A1;
+					Eigen::Vector2d u2 = p0 - A2;
+					double n1 = u1.norm(), n2 = u2.norm();
+					if (n1 < 1e-6 || n2 < 1e-6) continue;
+					u1 /= n1; u2 /= n2;
+
+					// Build Jacobian H (2x2)
+					Eigen::Matrix2d H;
+					H.row(0) = u1.transpose();
+					H.row(1) = u2.transpose();
+
+					// Solve Δp = (HᵀH)⁻¹ Hᵀ Δr  (least-squares)
+					Eigen::Vector2d dP = (H.transpose() * H).ldlt().solve(H.transpose() * dR);
+
+					// Predicted Δr and residual
+					Eigen::Vector2d res = dR - H * dP;
+					double err = res.squaredNorm();
+
+					// Penalize unrealistic motion magnitude
+					if (dP.norm() > max_motion)
+						err += 1e6; // large penalty
+
+					if (err < best_err) {
+						best_err = err;
+						best_sign = sgn;
+					}
+				}
+
+				if (best_sign == 0)
+					return std::nullopt; // couldn’t decide
+
+				return best_sign;
+			}
+		
 		std::pair<double, double> parse_parameter(const std::string &msg) {
 			// Expect messages like "x,y"
 			size_t comma = msg.find(',');
@@ -300,10 +355,45 @@ class UWBTransform : public rclcpp::Node {
 			std::lock_guard<std::mutex> lock(data_mutex);
 			
 			std::vector<geometry_msgs::msg::TransformStamped> transforms;
+			
+			// Range change Linearization for choosing the correct position
+			if ((std::fabs(d2_prev - d2) == 0.0) || (std::fabs(d3_prev - d3) == 0.0)) {
+				d2_prev = d2;
+				d3_prev = d3;
+				pos = this->calculate_2Point(Eigen::Vector2d(x2,y2), Eigen::Vector2d(x3,y3), d2, d3);
+			} else {
+				sign = this->pickInitialSignEigen(Eigen::Vector2d(x2,y2),
+												  Eigen::Vector2d(x3,y3),
+												  Eigen::Vector2d(std::fabs(x),std::fabs(y)),
+												  d2_prev, d3_prev, d2, d3, 2.5);
+				if ((*sign) != 0) {
+					sign_prev = sign;
+					}
+				d2_prev = d2;
+				d3_prev = d3;
+				pos = this->calculate_2Point(Eigen::Vector2d(x2,y2), Eigen::Vector2d(x3,y3), d2, d3);
+			}
+			// --- Handle sign persistence safely ---
+			if (sign && (*sign == 1 || *sign == -1)) {
+				// Valid sign returned this frame
+				sign_prev = sign;
+			} else if (sign_prev) {
+				// Fall back to last valid sign if available
+				sign = sign_prev;
+			} else {
+				// Default if no info yet
+				sign = 1;
+			}
+
 			//pos = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x2,y2), Eigen::Vector2d(x3,y3), d1, d2, d3);
-			pos = this->calculate_2Point(Eigen::Vector2d(x2,y2), Eigen::Vector2d(x3,y3), d2, d3);
-			x = pos[0][0];
-			y = pos[0][1];
+			try {
+				x = pos[0][0];
+				y = (*sign) * pos[0][1];
+			} catch (...) {
+				x = pos[0][0];
+				y = (*sign) * pos[0][1];
+				}
+			std::cout << x << y <<std::endl;
 			q = this->calculateYaw(x, y);
 			
 			uwb_odom_msg.header.stamp = this->get_clock()->now();
