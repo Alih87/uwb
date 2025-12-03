@@ -59,15 +59,15 @@ def generate_launch_description():
 													 description='Simulation control loop update rate'),
 													 
 	# UWB Anchor locations
-		DeclareLaunchArgument('anc0', default_value='0.0,0.0',
+		DeclareLaunchArgument('anc0', default_value='0.0,-3.18',
 													 description='Anchor 1 location (x,y)'),
-		DeclareLaunchArgument('anc1', default_value='0.36,-0.43',
+		DeclareLaunchArgument('anc1', default_value='0.36,-0.435',
 													 description='Anchor 2 location (x,y)'),
 		DeclareLaunchArgument('anc2', default_value='0.36,0.435',
 													 description='Anchor 3 location (x,y)'),
-		DeclareLaunchArgument('anc3', default_value='0,0',
+		DeclareLaunchArgument('anc3', default_value='0.0,0.0',
 													 description='Anchor 4 location (x,y)'),
-		DeclareLaunchArgument('anc4', default_value='0,0',
+		DeclareLaunchArgument('anc4', default_value='1.633,0.22',
 													 description='Anchor 5 location (x,y)'),
     ]
 
