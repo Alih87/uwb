@@ -127,28 +127,11 @@ class UWBTransform : public rclcpp::Node {
 			
 			dynamic_anc_tf.transform.rotation.x = 0.0;
 			dynamic_anc_tf.transform.rotation.y = 0.0;
-			dynamic_anc_tf.transform.rotation.z = 1.0;
-			dynamic_anc_tf.transform.rotation.w = 0.0;
+			dynamic_anc_tf.transform.rotation.z = 0.0;
+			dynamic_anc_tf.transform.rotation.w = 1.0;
 			
 			dynamic_anc_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
 			dynamic_anc_broadcaster_->sendTransform(dynamic_anc_tf);
-			
-			// static anchor_tf 
-			static_anc_tf.header.stamp = this->get_clock()->now();
-			static_anc_tf.header.frame_id = "static_anc_link";
-			static_anc_tf.child_frame_id = "odom";
-			
-			static_anc_tf.transform.translation.x = -static_center_x;
-			static_anc_tf.transform.translation.y = static_center_y;
-			static_anc_tf.transform.translation.z = 0.0;
-			
-			static_anc_tf.transform.rotation.x = 0.0;
-			static_anc_tf.transform.rotation.y = -1.0;
-			static_anc_tf.transform.rotation.z = 0.0;
-			static_anc_tf.transform.rotation.w = 0.0;
-			
-			static_anc_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
-			static_anc_broadcaster_->sendTransform(static_anc_tf);
 			
 			tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 			
@@ -163,12 +146,6 @@ class UWBTransform : public rclcpp::Node {
 		std::mutex data_mutex;
 		nav_msgs::msg::Odometry dynamic_odom_msg;
 		nav_msgs::msg::Odometry static_odom_msg;
-		geometry_msgs::msg::TransformStamped static_anc_tf;
-		geometry_msgs::msg::TransformStamped dynamic_anc_tf;
-		geometry_msgs::msg::TransformStamped dynamic_tag_tf;
-		geometry_msgs::msg::TransformStamped static_tag_tf;
-		geometry_msgs::msg::TransformStamped base_tag_tf;
-		geometry_msgs::msg::TransformStamped inter_frame_tf;
 		
 		double x_dynamic = 0.0, y_dynamic = 0.0;
 		double x_static = 0.0, y_static = 0.0;
@@ -189,6 +166,8 @@ class UWBTransform : public rclcpp::Node {
 		std::optional<int> sign;
 		std::optional<int> sign_prev;
 		
+		geometry_msgs::msg::TransformStamped dynamic_anc_tf;
+		
 		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_dynamic, publisher_static;
 		rclcpp::TimerBase::SharedPtr timer_;
 		
@@ -202,7 +181,6 @@ class UWBTransform : public rclcpp::Node {
 		std::vector<Eigen::Vector2d> pos_dynamic;	// In case of 2-point ranging
 		
 		std::shared_ptr<tf2_ros::StaticTransformBroadcaster> dynamic_anc_broadcaster_;
-		std::shared_ptr<tf2_ros::StaticTransformBroadcaster> static_anc_broadcaster_;
 		std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 		
 		tf2_ros::Buffer buffer_;
@@ -422,7 +400,6 @@ class UWBTransform : public rclcpp::Node {
 			}
 		}
 
-			
 		void static_localization() {
 				while (true) {
 					std::lock_guard<std::mutex> lock(data_mutex);
@@ -436,23 +413,14 @@ class UWBTransform : public rclcpp::Node {
 			
 		void timer_callback() {
 			std::lock_guard<std::mutex> lock(data_mutex);
-			//std::vector<geometry_msgs::msg::TransformStamped> transforms;
 			
 			dynamic_odom_msg.header.stamp = this->get_clock()->now();
 			static_odom_msg.header.stamp = dynamic_odom_msg.header.stamp;
-			dynamic_tag_tf.header.stamp = dynamic_odom_msg.header.stamp;
-			static_tag_tf.header.stamp = dynamic_odom_msg.header.stamp;
-			base_tag_tf.header.stamp = dynamic_odom_msg.header.stamp;
-			inter_frame_tf.header.stamp = dynamic_odom_msg.header.stamp;
 			
-			dynamic_odom_msg.header.frame_id = "dynamic_anc_link";
+			dynamic_odom_msg.header.frame_id = "odom_uwb";
 			dynamic_odom_msg.child_frame_id  = "tag_link";
-			dynamic_tag_tf.header.frame_id = "dynamic_anc_link";
-			dynamic_tag_tf.child_frame_id = "tag_link";
-			static_tag_tf.header.frame_id = "static_anc_link";
-			static_tag_tf.child_frame_id = "tag_link";
-			//inter_frame_tf.header.frame_id = "static_anc_link";
-			//inter_frame_tf.child_frame_id = "dynamic_anc_link";
+			static_odom_msg.header.frame_id = "map";
+			static_odom_msg.child_frame_id  = "tag_link";
 			
 			// Translation
 			dynamic_odom_msg.pose.pose.position.x = x_dynamic;
@@ -461,13 +429,6 @@ class UWBTransform : public rclcpp::Node {
 			static_odom_msg.pose.pose.position.x = x_static;
 			static_odom_msg.pose.pose.position.y = y_static;
 			static_odom_msg.pose.pose.position.z = 0.0;
-			
-			dynamic_tag_tf.transform.translation.x = x_dynamic;
-			dynamic_tag_tf.transform.translation.y = y_dynamic;
-			dynamic_tag_tf.transform.translation.z = 0;
-			static_tag_tf.transform.translation.x = x_static;
-			static_tag_tf.transform.translation.y = y_static;
-			static_tag_tf.transform.translation.z = 0;
 			
 			// Tag orientation wrt the uwb anchor positions (x1,y1),(x2,y2) and (x3,y3)
 			dynamic_odom_msg.pose.pose.orientation.x = q_dynamic.x();
@@ -478,9 +439,6 @@ class UWBTransform : public rclcpp::Node {
 			static_odom_msg.pose.pose.orientation.y = q_static.y();
 			static_odom_msg.pose.pose.orientation.z = q_static.z();
 			static_odom_msg.pose.pose.orientation.w = q_static.w();
-			
-			dynamic_tag_tf.transform.rotation = dynamic_odom_msg.pose.pose.orientation;
-			static_tag_tf.transform.rotation = static_odom_msg.pose.pose.orientation;
 			
 			dynamic_odom_msg.twist.twist.linear.x = 0;
 			dynamic_odom_msg.twist.twist.linear.y = 0;
@@ -511,37 +469,6 @@ class UWBTransform : public rclcpp::Node {
 			
 			publisher_dynamic->publish(dynamic_odom_msg);
 			publisher_static->publish(static_odom_msg);
-			tf_broadcaster_->sendTransform(dynamic_tag_tf);
-			tf_broadcaster_->sendTransform(static_tag_tf);
-			
-			try {
-				auto inter_frame_lookup = buffer_.lookupTransform(
-						"static_anc_link",
-						"dynamic_anc_link",
-						rclcpp::Time(0)
-						);
-				auto base_tag_lookup = buffer_.lookupTransform(
-						"base_link",
-						"tag_link",
-						rclcpp::Time(0)
-						);
-						
-				inter_frame_tf.transform.translation.x = inter_frame_lookup.transform.translation.x;
-				inter_frame_tf.transform.translation.y = inter_frame_lookup.transform.translation.y;
-				inter_frame_tf.transform.translation.z = inter_frame_lookup.transform.translation.z;
-				inter_frame_tf.transform.rotation = inter_frame_lookup.transform.rotation;
-				
-				base_tag_tf.transform.translation.x = base_tag_lookup.transform.translation.x;
-				base_tag_tf.transform.translation.y = base_tag_lookup.transform.translation.y;
-				base_tag_tf.transform.translation.z = base_tag_lookup.transform.translation.z;
-				base_tag_tf.transform.rotation = base_tag_lookup.transform.rotation;
-				
-				tf_broadcaster_->sendTransform(inter_frame_tf);
-				tf_broadcaster_->sendTransform(base_tag_tf);
-			}
-			 catch (const tf2::TransformException& ex) {
-				 RCLCPP_WARN(get_logger(), "TF not ready: %s", ex.what());
-				 }
 		}
 	};
 

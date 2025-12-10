@@ -12,6 +12,7 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(example_interfaces REQUIRED)
 
@@ -31,12 +32,16 @@ ament_target_dependencies(uwb_rcv rclcpp std_msgs serial example_interfaces)
 add_executable(uwb_tf src/uwb_transform.cpp)
 ament_target_dependencies(uwb_tf rclcpp std_msgs nav_msgs tf2_ros serial Eigen3 example_interfaces)
 
+add_executable(ekf_tf src/ekf_transform.cpp)
+ament_target_dependencies(ekf_tf rclcpp std_msgs nav_msgs tf2_ros tf2_geometry_msgs serial Eigen3 example_interfaces)
+
 add_executable(dynamic_tf_pub src/dynamic_transforms_pub.cpp)
 ament_target_dependencies(dynamic_tf_pub rclcpp std_msgs nav_msgs tf2_ros serial)
 
 target_link_libraries(uwb_node serial)
 target_link_libraries(uwb_rcv serial)
 target_link_libraries(uwb_tf serial)
+target_link_libraries(ekf_tf serial)
 target_link_libraries(dynamic_tf_pub serial)
 
 install(TARGETS uwb_node
@@ -48,6 +53,10 @@ DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS uwb_tf
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS ekf_tf
 DESTINATION lib/${PROJECT_NAME}
 )
 

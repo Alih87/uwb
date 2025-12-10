@@ -7,6 +7,17 @@ from ament_index_python.packages import get_package_share_directory
 import os
 from launch.actions import TimerAction
 
+STATIC_ANCHORS = {
+"anc0":["0.0","-3.18"],
+"anc3":["0.0","0.0"],
+"anc4":["1.65","0.22"]
+}
+
+DYNAMIC_ANCHORS = {
+"anc1":["0.36","-0.435"],
+"anc2":["0.36","0.435"]
+}
+
 def generate_launch_description():
     # --- Launch configurations ---
     channel_type = LaunchConfiguration('channel_type', default='serial')
@@ -59,15 +70,15 @@ def generate_launch_description():
 													 description='Simulation control loop update rate'),
 													 
 	# UWB Anchor locations
-		DeclareLaunchArgument('anc0', default_value='0.0,-3.18',
+		DeclareLaunchArgument('anc0', default_value=STATIC_ANCHORS['anc0'][0]+","+STATIC_ANCHORS['anc0'][1],
 													 description='Anchor 1 location (x,y)'),
-		DeclareLaunchArgument('anc1', default_value='0.36,-0.435',
+		DeclareLaunchArgument('anc1', default_value=DYNAMIC_ANCHORS['anc1'][0]+","+DYNAMIC_ANCHORS['anc1'][1],
 													 description='Anchor 2 location (x,y)'),
-		DeclareLaunchArgument('anc2', default_value='0.36,0.435',
+		DeclareLaunchArgument('anc2', default_value=DYNAMIC_ANCHORS['anc2'][0]+","+DYNAMIC_ANCHORS['anc2'][1],
 													 description='Anchor 3 location (x,y)'),
-		DeclareLaunchArgument('anc3', default_value='0.0,0.0',
+		DeclareLaunchArgument('anc3', default_value=STATIC_ANCHORS['anc3'][0]+","+STATIC_ANCHORS['anc3'][1],
 													 description='Anchor 4 location (x,y)'),
-		DeclareLaunchArgument('anc4', default_value='1.633,0.22',
+		DeclareLaunchArgument('anc4', default_value=STATIC_ANCHORS['anc4'][0]+","+STATIC_ANCHORS['anc4'][1],
 													 description='Anchor 5 location (x,y)'),
     ]
 
@@ -122,6 +133,13 @@ def generate_launch_description():
         output='screen'
     )
     
+    ekf_tf_node = Node(
+        package='uwb_test',
+        executable='ekf_tf',
+        name='ekf_tf',
+        output='screen'
+    )
+    
     dynamic_tf_node = Node(
         package='uwb_test',
         executable='dynamic_tf_pub',
@@ -163,7 +181,28 @@ def generate_launch_description():
 							 executable='ublox_gps_node',
 							 output='screen',
 							 parameters=[params])
+    
+    static_uwb_0 = Node(
+		package="tf2_ros",
+		executable="static_transform_publisher",
+		name="static_uwb_0",
+		arguments=[STATIC_ANCHORS['anc0'][0],STATIC_ANCHORS['anc0'][1],'0.0','0.0','0.0','0.0','map','static_uwb_0']
+	)
+	
+    static_uwb_3 = Node(
+		package="tf2_ros",
+		executable="static_transform_publisher",
+		name="static_uwb_3",
+		arguments=[STATIC_ANCHORS['anc3'][0],STATIC_ANCHORS['anc3'][1],'0.0','0.0','0.0','0.0','map','static_uwb_3']
+	)
      
+    static_uwb_4 = Node(
+		package="tf2_ros",
+		executable="static_transform_publisher",
+		name="static_uwb_4",
+		arguments=[STATIC_ANCHORS['anc4'][0],STATIC_ANCHORS['anc4'][1],'0.0','0.0','0.0','0.0','map','static_uwb_4']
+	)
+	
     static_base_imu = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
@@ -184,7 +223,23 @@ def generate_launch_description():
 		name="static_tf_gnss",
 		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','base_link','gps']
 	)
-	   
+	
+    ekf_uwb_odom = Node(
+	package="robot_localization",
+	executable="ekf_node",
+	name="uwb_ekf_odom",
+	parameters=["/ws/isaac_ros-dev/src/uwb_test/params/dual_ekf_navsat_uwb.yaml"],
+	remappings=[('odometry/filtered', 'uwb/dynamic_filtered')]
+	)
+	
+    ekf_uwb_map = Node(
+	package="robot_localization",
+	executable="ekf_node",
+	name="uwb_ekf_map",
+	parameters=["/ws/isaac_ros-dev/src/uwb_test/params/dual_ekf_navsat_uwb.yaml"],
+	remappings=[('odometry/filtered', 'uwb/static_filtered')]
+	)
+	
     delayed_scout = TimerAction(
 	period=7.0,
 	actions=[scout_base_node]
@@ -193,14 +248,20 @@ def generate_launch_description():
     # --- Return LaunchDescription ---
     return LaunchDescription(declare_args + [
         delayed_scout,
+        static_uwb_0,
+        static_uwb_3,
+        static_uwb_4,
         static_base_imu,
         static_base_lidar,
         static_base_gnss,
         ublox_gps_node,
         umx_driver_node,
-        rplidar_ros_node,
         uwb_rcv_node,
         uwb_tf_node,
+        ekf_tf_node,
+        ekf_uwb_odom,
+        ekf_uwb_map,
         #dynamic_tf_node,
+        rplidar_ros_node,
         rviz2_lidar_node
     ])
