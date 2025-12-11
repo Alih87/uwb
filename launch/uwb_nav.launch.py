@@ -18,6 +18,8 @@ DYNAMIC_ANCHORS = {
 "anc2":["0.36","0.435"]
 }
 
+DUAL_EKF_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb.yaml')
+
 def generate_launch_description():
     # --- Launch configurations ---
     channel_type = LaunchConfiguration('channel_type', default='serial')
@@ -224,19 +226,19 @@ def generate_launch_description():
 		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','base_link','gps']
 	)
 	
-    ekf_uwb_odom = Node(
+    ekf_filter_node_odom = Node(
 	package="robot_localization",
 	executable="ekf_node",
-	name="uwb_ekf_odom",
-	parameters=["/ws/isaac_ros-dev/src/uwb_test/params/dual_ekf_navsat_uwb.yaml"],
+	name="ekf_filter_node_odom",
+	parameters=[{"ekf_filter_node_odom": ""}, DUAL_EKF_PARAMS],
 	remappings=[('odometry/filtered', 'uwb/dynamic_filtered')]
 	)
 	
-    ekf_uwb_map = Node(
+    ekf_filter_node_map = Node(
 	package="robot_localization",
 	executable="ekf_node",
-	name="uwb_ekf_map",
-	parameters=["/ws/isaac_ros-dev/src/uwb_test/params/dual_ekf_navsat_uwb.yaml"],
+	name="ekf_filter_node_map",
+	parameters=[{"ekf_filter_node_map": ""}, DUAL_EKF_PARAMS],
 	remappings=[('odometry/filtered', 'uwb/static_filtered')]
 	)
 	
@@ -258,9 +260,9 @@ def generate_launch_description():
         umx_driver_node,
         uwb_rcv_node,
         uwb_tf_node,
+        ekf_filter_node_odom,
+        ekf_filter_node_map,
         ekf_tf_node,
-        ekf_uwb_odom,
-        ekf_uwb_map,
         #dynamic_tf_node,
         rplidar_ros_node,
         rviz2_lidar_node

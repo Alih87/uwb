@@ -9,18 +9,20 @@ ekf_filter_node_odom:
     transform_timeout: 0.0
     print_diagnostics: true
     debug: false
+    publish_tf: true
+    publish_acceleration: false
 
     map_frame: map
     odom_frame: odom_uwb
-    base_link_frame: base_link
+    base_link_frame: tag_link
     world_frame: odom_uwb
 
     odom0: uwb/dynamic_odom
     odom0_config: [false, false, false,
                   false, false, false,
                   true,  true,  false,
-                  true, true, false,
-                  false, false, false]
+                  false, false, false,
+                  true, true, false]
     odom0_queue_size: 10
     odom0_nodelay: true
     odom0_differential: false
@@ -46,14 +48,14 @@ ekf_filter_node_odom:
                               0.0,    0.0,    0.0,    0.3,   0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.3,   0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.01,  0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.5,    0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.5,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.9,    0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.9,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.1,   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.3,   0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.3,   0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.3,   0.0,    0.0,    0.0,
-                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.3,   0.0,    0.0,
-                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.3,   0.0,
+                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    2.,   0.0,    0.0,
+                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    2.,   0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.3]
 
     initial_estimate_covariance: [1e-9, 0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    0.0,
@@ -80,17 +82,19 @@ ekf_filter_node_map:
     transform_timeout: 0.0
     print_diagnostics: true
     debug: false
+    publish_tf: true
+    publish_acceleration: false
 
     map_frame: map
     odom_frame: odom_uwb
-    base_link_frame: base_link
+    base_link_frame: tag_link
     world_frame: map
 
     odom0: uwb/static_odom
     odom0_config: [true, true, false,
+                  true, true, false,
+                  true,  true,  false,
                   false, false, false,
-                  true,  true,  true,
-                  false, false, true,
                   false, false, false]
     odom0_queue_size: 10
     odom0_nodelay: true
@@ -154,15 +158,15 @@ ekf_filter_node_map:
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1.0,    0.0,
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1.0]
 
-navsat_transform:
-  ros__parameters:
-    frequency: 30.0
-    delay: 3.0
-    magnetic_declination_radians: 0.0429351  # For lat/long 55.944831, -3.186998
-    yaw_offset: 1.570796327  # IMU reads 0 facing magnetic north, not east
-    zero_altitude: false
-    broadcast_utm_transform: true
-    publish_filtered_gps: true
-    use_odometry_yaw: false
-    wait_for_datum: false
+#navsat_transform:
+#  ros__parameters:
+#    frequency: 30.0
+#    delay: 3.0
+#    magnetic_declination_radians: 0.0429351  # For lat/long 55.944831, -3.186998
+#    yaw_offset: 1.570796327  # IMU reads 0 facing magnetic north, not east
+#    zero_altitude: false
+#    broadcast_utm_transform: true
+#    publish_filtered_gps: true
+#    use_odometry_yaw: false
+#    wait_for_datum: false
 
