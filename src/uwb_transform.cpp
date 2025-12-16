@@ -136,16 +136,16 @@ class UWBTransform : public rclcpp::Node {
 			// static transform representing map->odom substituting the global GNSS position in the absence of the latter.
 			static_anc_tf.header.stamp = this->get_clock()->now();
 			static_anc_tf.header.frame_id = "map";
-			static_anc_tf.child_frame_id = "odom";
+			static_anc_tf.child_frame_id = "map_uwb";
 			
 			static_anc_tf.transform.translation.x = static_center_x;
-			static_anc_tf.transform.translation.y = static_center_y;
+			static_anc_tf.transform.translation.y = -static_center_y;
 			static_anc_tf.transform.translation.z = 0.0;
 			
 			static_anc_tf.transform.rotation.x = 0.0;
 			static_anc_tf.transform.rotation.y = 0.0;
-			static_anc_tf.transform.rotation.z = 0.0;
-			static_anc_tf.transform.rotation.w = 1.0;
+			static_anc_tf.transform.rotation.z = -0.707;
+			static_anc_tf.transform.rotation.w = 0.707;
 			
 			static_anc_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
 			static_anc_broadcaster_->sendTransform(static_anc_tf);
@@ -176,7 +176,7 @@ class UWBTransform : public rclcpp::Node {
 		double x5 = 0.0, y5 = 0.0; 
 		double d1 = 0.0, d2 = 0.0, d3 = 0.0, d4 = 0.0, d5 = 0.0;
 		double d2_prev = 0.0, d3_prev = 0.0;
-		//double uwb_center_x = (x1 + x2 + x3)+++++++++++++++++++++++++++++++++++++++++++++++++ / 3, uwb_center_y = (y1 + y2 + y3) / 3;
+		//double uwb_center_x = (x1 + x2 + x3) / 3, uwb_center_y = (y1 + y2 + y3) / 3;
 		double static_center_x = 0.0, static_center_y = 0.0;
 		double dynamic_center_x = 0.0, dynamic_center_y = 0.0;
 		Eigen::Quaterniond q_dynamic, q_static;
@@ -436,7 +436,7 @@ class UWBTransform : public rclcpp::Node {
 			
 			dynamic_odom_msg.header.frame_id = "odom_uwb";
 			dynamic_odom_msg.child_frame_id  = "tag_link";
-			static_odom_msg.header.frame_id = "map";
+			static_odom_msg.header.frame_id = "map_uwb";
 			static_odom_msg.child_frame_id  = "tag_link";
 			
 			// Translation

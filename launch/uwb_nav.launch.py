@@ -184,25 +184,32 @@ def generate_launch_description():
 							 output='screen',
 							 parameters=[params])
     
+    static_map_odom = Node(
+		package="tf2_ros",
+		executable="static_transform_publisher",
+		name="static_map_odom",
+		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','map','odom']
+	)
+    
     static_uwb_0 = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_uwb_0",
-		arguments=[STATIC_ANCHORS['anc0'][0],STATIC_ANCHORS['anc0'][1],'0.0','0.0','0.0','0.0','map','static_uwb_0']
+		arguments=[STATIC_ANCHORS['anc0'][0],STATIC_ANCHORS['anc0'][1],'0.0','0.0','0.0','0.0','map_uwb','static_uwb_0']
 	)
 	
     static_uwb_3 = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_uwb_3",
-		arguments=[STATIC_ANCHORS['anc3'][0],STATIC_ANCHORS['anc3'][1],'0.0','0.0','0.0','0.0','map','static_uwb_3']
+		arguments=[STATIC_ANCHORS['anc3'][0],STATIC_ANCHORS['anc3'][1],'0.0','0.0','0.0','0.0','map_uwb','static_uwb_3']
 	)
      
     static_uwb_4 = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_uwb_4",
-		arguments=[STATIC_ANCHORS['anc4'][0],STATIC_ANCHORS['anc4'][1],'0.0','0.0','0.0','0.0','map','static_uwb_4']
+		arguments=[STATIC_ANCHORS['anc4'][0],STATIC_ANCHORS['anc4'][1],'0.0','0.0','0.0','0.0','map_uwb','static_uwb_4']
 	)
 	
     static_base_imu = Node(
@@ -250,6 +257,7 @@ def generate_launch_description():
     # --- Return LaunchDescription ---
     return LaunchDescription(declare_args + [
         delayed_scout,
+        static_map_odom,
         static_uwb_0,
         static_uwb_3,
         static_uwb_4,
