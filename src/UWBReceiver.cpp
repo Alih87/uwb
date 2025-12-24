@@ -18,11 +18,15 @@ public:
   UWBRcv()
   : Node("uwb_rcv")
   {
-    publisher_anc1_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc0", 10);
-    publisher_anc2_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc1", 10);
-    publisher_anc3_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc2", 10);
-    publisher_anc4_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc3", 10);
-    publisher_anc5_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc4", 10);
+	// Define QoS
+	qos_anc.best_effort();
+	qos_anc.durability_volatile();
+
+    publisher_anc1_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc0", qos_anc);
+    publisher_anc2_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc1", qos_anc);
+    publisher_anc3_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc2", qos_anc);
+    publisher_anc4_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc3", qos_anc);
+    publisher_anc5_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc4", qos_anc);
 
     // --- Create UDP socket ---
     sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -95,6 +99,7 @@ private:
   }
 
   int sockfd_;
+  rclcpp::QoS qos_anc{rclcpp::KeepLast(3)};
   rclcpp::TimerBase::SharedPtr timer_;
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc1_;
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc2_;

@@ -96,24 +96,31 @@ class UWBTransform : public rclcpp::Node {
 						static_center_y = *sum_y / *count;
 						}
 			
+			// Define QoS
+			qos_anc.best_effort();
+			qos_anc.durability_volatile();
+			
+			qos_odom.reliable();
+			qos_odom.durability_volatile();
+			
 			// Initialize subscriptions
 			subscription_anc1 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc0", 10,
+							"uwb/d_anc0", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(1, msg);});
 			subscription_anc2 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc1", 10,
+							"uwb/d_anc1", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(2, msg);});
 			subscription_anc3 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc2", 10,
+							"uwb/d_anc2", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(3, msg);});
 			subscription_anc4 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc3", 10,
+							"uwb/d_anc3", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(4, msg);});
 			subscription_anc5 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc4", 10,
+							"uwb/d_anc4", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(5, msg);});
-			publisher_dynamic = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dynamic_odom", 10);
-			publisher_static = this->create_publisher<nav_msgs::msg::Odometry>("uwb/static_odom", 10);
+			publisher_dynamic = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dynamic_odom", qos_odom);
+			publisher_static = this->create_publisher<nav_msgs::msg::Odometry>("uwb/static_odom", qos_odom);
 			timer_ = this->create_wall_timer(50ms, std::bind(&UWBTransform::timer_callback, this));
 			
 			// dynamic anchor_tf 
@@ -185,6 +192,8 @@ class UWBTransform : public rclcpp::Node {
 		
 		geometry_msgs::msg::TransformStamped dynamic_anc_tf, static_anc_tf;
 		
+		rclcpp::QoS qos_anc{rclcpp::KeepLast(3)};
+		rclcpp::QoS qos_odom{rclcpp::KeepLast(3)};
 		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_dynamic, publisher_static;
 		rclcpp::TimerBase::SharedPtr timer_;
 		
