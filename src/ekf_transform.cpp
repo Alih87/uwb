@@ -21,12 +21,15 @@ public:
 		qos_odom.best_effort();
 		qos_odom.durability_volatile();
 		
+		qos_metric.best_effort();
+		qos_metric.durability_volatile();
+		
         uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/dynamic_filtered", 5,
+            "uwb/dynamic_filtered", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback(msg); });
 
         uwb_static_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/static_filtered", 5,
+            "uwb/static_filtered", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->static_callback(msg); });
             
         logs_pub_ = this->create_publisher<example_interfaces::msg::Float64MultiArray>("/ekf/metrics", 2);
@@ -48,6 +51,7 @@ private:
     geometry_msgs::msg::TransformStamped T_map_odom_msg;
 	
 	rclcpp::QoS qos_odom{rclcpp::KeepLast(3)};
+	rclcpp::QoS qos_metric{rclcpp::KeepLast(3)};
     rclcpp::TimerBase::SharedPtr timer_ ,delta_timer_;
     rclcpp::Publisher<example_interfaces::msg::Float64MultiArray>::SharedPtr logs_pub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr uwb_dynamic_sub;

@@ -474,8 +474,8 @@ class UWBTransform : public rclcpp::Node {
 			static_odom_msg.twist.twist.linear.z = 0;
 			
 			dynamic_odom_msg.pose.covariance = {
-					0.04, 0, 0, 0, 0, 0,
-					0, 0.04, 0, 0, 0, 0,
+					0.2, 0, 0, 0, 0, 0,
+					0, 0.2, 0, 0, 0, 0,
 					0, 0, 99999, 0, 0, 0,
 					0, 0, 0, 99999, 0, 0,
 					0, 0, 0, 0, 99999, 0,
@@ -490,8 +490,22 @@ class UWBTransform : public rclcpp::Node {
 					0, 0, 0, 0, 0, 99999
 				};
 		
-			static_odom_msg.pose.covariance = dynamic_odom_msg.pose.covariance;
-			static_odom_msg.twist.covariance = dynamic_odom_msg.twist.covariance;
+			static_odom_msg.pose.covariance = {
+					0.01, 0, 0, 0, 0, 0,
+					0, 0.01, 0, 0, 0, 0,
+					0, 0, 99999, 0, 0, 0,
+					0, 0, 0, 99999, 0, 0,
+					0, 0, 0, 0, 99999, 0,
+					0, 0, 0, 0, 0, 99999
+				};
+			static_odom_msg.twist.covariance = {
+					99999, 0, 0, 0, 0, 0,
+					0, 99999, 0, 0, 0, 0,
+					0, 0, 99999, 0, 0, 0,
+					0, 0, 0, 99999, 0, 0,
+					0, 0, 0, 0, 99999, 0,
+					0, 0, 0, 0, 0, 99999
+				};
 			
 			publisher_dynamic->publish(dynamic_odom_msg);
 			publisher_static->publish(static_odom_msg);
