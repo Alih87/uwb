@@ -33,7 +33,7 @@ public:
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->static_callback(msg); });
             
         logs_pub_ = this->create_publisher<example_interfaces::msg::Float64MultiArray>("/ekf/metrics", 2);
-		logs.data.resize(9, 0.0);
+		logs.data.resize(12, 0.0);
 
 
         tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -48,7 +48,7 @@ private:
     nav_msgs::msg::Odometry static_odom_msg;
     
     tf2::Transform T_map_tag, T_odom_tag, T_map_odom;
-    geometry_msgs::msg::TransformStamped T_map_odom_msg;
+    geometry_msgs::msg::TransformStamped T_map_odom_msg, T_odom_tag_msg;
 	
 	rclcpp::QoS qos_odom{rclcpp::KeepLast(3)};
 	rclcpp::QoS qos_metric{rclcpp::KeepLast(3)};
@@ -60,8 +60,8 @@ private:
     // "logs" variable logs all the control data which helps us tune the cavariance matrices
 	// logs = [x_stat, y_stat, theta_stat, x_dyn, y_dyn, theta_dyn, ]
 	example_interfaces::msg::Float64MultiArray logs;
-    float x_dyn_prev = 0., x_stat_prev = 0., y_dyn_prev = 0., y_stat_prev = 0., x_tf_prev = 0., y_tf_prev = 0.;
-	geometry_msgs::msg::Quaternion yaw_dyn_prev, yaw_stat_prev, yaw_tf_prev;
+    float x_dyn_prev = 0., x_stat_prev = 0., y_dyn_prev = 0., y_stat_prev = 0., x_tf_prev = 0., y_tf_prev = 0., x_dyn_tf_prev = 0., y_dyn_tf_prev = 0.;
+	geometry_msgs::msg::Quaternion yaw_dyn_prev, yaw_stat_prev, yaw_tf_prev, yaw_dyn_tf_prev;
 	rclcpp::Time t_prev = this->get_clock()->now();
 	double delta_t = 0.;
 
@@ -149,8 +149,8 @@ private:
 	
     void timer_callback() {
 		nav_msgs::msg::Odometry dyn, stat;
-		float x_dyn, x_stat, y_dyn, y_stat, x_tf, y_tf;
-		geometry_msgs::msg::Quaternion yaw_dyn, yaw_stat, yaw_tf;
+		float x_dyn, x_stat, y_dyn, y_stat, x_tf, y_tf, x_dyn_tf, y_dyn_tf;
+		geometry_msgs::msg::Quaternion yaw_dyn, yaw_stat, yaw_tf, yaw_dyn_tf;
 		tf2::Quaternion q_, q_prev;
 		
 		{
@@ -179,14 +179,20 @@ private:
 		T_map_odom_msg.header.frame_id = "map_uwb";
 		T_map_odom_msg.child_frame_id  = "odom_uwb";
 
-		geometry_msgs::msg::Transform TF_map_odom;
+		geometry_msgs::msg::Transform TF_map_odom, TF_odom_tag;
+		tf2::convert(T_odom_tag, TF_odom_tag);
 		tf2::convert(T_map_odom, TF_map_odom);
 
 		T_map_odom_msg.transform = TF_map_odom;
+		T_odom_tag_msg.transform = TF_odom_tag;
 		
 		x_tf = T_map_odom_msg.transform.translation.x;
 		y_tf = T_map_odom_msg.transform.translation.y;
 		yaw_tf = T_map_odom_msg.transform.rotation;
+		
+		x_dyn_tf = T_odom_tag_msg.transform.translation.x;
+		y_dyn_tf = T_odom_tag_msg.transform.translation.y;
+		yaw_dyn_tf = T_odom_tag_msg.transform.rotation;
 
 		tf_broadcaster_->sendTransform(T_map_odom_msg);
 		
@@ -212,13 +218,21 @@ private:
 		}
 		if (delta_t >= 0.066667 && std::fabs(x_tf - x_tf_prev) > 0) {
 			logs.data[6] = (x_tf - x_tf_prev) / delta_t;
+			logs.data[9] = (x_dyn_tf - x_dyn_tf_prev) / delta_t;
 			logs.data[7] = (y_tf - y_tf_prev) / delta_t;
+			logs.data[10] = (y_dyn_tf - y_dyn_tf_prev) / delta_t;
 			tf2::fromMsg(yaw_tf, q_);
 			tf2::fromMsg(yaw_tf_prev, q_prev);
 			logs.data[8] = q_.angleShortestPath(q_prev) / delta_t;
+			tf2::fromMsg(yaw_dyn_tf, q_);
+			tf2::fromMsg(yaw_dyn_tf_prev, q_prev);
+			logs.data[11] = q_.angleShortestPath(q_prev) / delta_t;
 			x_tf_prev = x_tf;
 			y_tf_prev = y_tf;
 			yaw_tf_prev = yaw_tf;
+			x_dyn_tf_prev = x_tf;
+			y_dyn_tf_prev = y_tf;
+			yaw_dyn_tf_prev = yaw_tf;
 		}
 		logs_pub_->publish(logs);
 	}

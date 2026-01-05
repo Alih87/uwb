@@ -122,6 +122,7 @@ class UWBTransform : public rclcpp::Node {
 			publisher_dynamic = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dynamic_odom", qos_odom);
 			publisher_static = this->create_publisher<nav_msgs::msg::Odometry>("uwb/static_odom", qos_odom);
 			timer_ = this->create_wall_timer(50ms, std::bind(&UWBTransform::timer_callback, this));
+			delta_timer_ = this->create_wall_timer(33.33ms, std::bind(&UWBTransform::time_delta, this));
 			
 			// dynamic anchor_tf 
 			dynamic_anc_tf.header.stamp = this->get_clock()->now();
@@ -159,16 +160,13 @@ class UWBTransform : public rclcpp::Node {
 			
 			tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 			
-			std::thread dynamic_task(&UWBTransform::dynamic_localization, this);
-			std::thread static_task(&UWBTransform::static_localization, this);
-
-			dynamic_task.detach();
-			static_task.detach();
+			dynamic_timer_ = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization, this));
+			static_timer_ = this->create_wall_timer(5ms, std::bind(&UWBTransform::static_localization, this));
 			}
 	
 	private:
 		std::mutex data_mutex;
-		nav_msgs::msg::Odometry dynamic_odom_msg;
+		nav_msgs::msg::Odometry dynamic_odom_msg, dynamic_odom_msg_prev, delta;
 		nav_msgs::msg::Odometry static_odom_msg;
 		
 		double x_dynamic = 0.0, y_dynamic = 0.0;
@@ -189,13 +187,14 @@ class UWBTransform : public rclcpp::Node {
 		Eigen::Quaterniond q_dynamic, q_static;
 		std::optional<int> sign;
 		std::optional<int> sign_prev;
+		bool has_prev = false;
 		
 		geometry_msgs::msg::TransformStamped dynamic_anc_tf, static_anc_tf;
 		
 		rclcpp::QoS qos_anc{rclcpp::KeepLast(3)};
 		rclcpp::QoS qos_odom{rclcpp::KeepLast(3)};
 		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_dynamic, publisher_static;
-		rclcpp::TimerBase::SharedPtr timer_;
+		rclcpp::TimerBase::SharedPtr timer_, delta_timer_, dynamic_timer_, static_timer_;
 		
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc1;
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc2;
@@ -209,8 +208,20 @@ class UWBTransform : public rclcpp::Node {
 		std::shared_ptr<tf2_ros::StaticTransformBroadcaster> dynamic_anc_broadcaster_, static_anc_broadcaster_;
 		std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 		
+		rclcpp::Time t_prev = this->get_clock()->now();
+		double delta_t = 0.;
+		
 		tf2_ros::Buffer buffer_;
 		tf2_ros::TransformListener listener_;
+		
+		void time_delta() {
+			std::lock_guard<std::mutex> lk(data_mutex);
+			rclcpp::Time t_= this->get_clock()->now();
+			if (t_ >= rclcpp::Duration(0.0333, 0) + t_prev) {
+				delta_t = (t_ - t_prev).seconds();
+				t_prev = t_;
+			}
+		}
 		
 		void common_anc_callback(int id, const example_interfaces::msg::Float64::SharedPtr msg) {
 			std::lock_guard<std::mutex> lock(data_mutex);
@@ -248,6 +259,9 @@ class UWBTransform : public rclcpp::Node {
 					Eigen::Matrix2d H;
 					H.row(0) = u1.transpose();
 					H.row(1) = u2.transpose();
+					
+					double cond = (H.transpose() * H).determinant();
+					if (cond < 1e-4) continue;
 
 					// Solve Δp = (HᵀH)⁻¹ Hᵀ Δr  (least-squares)
 					Eigen::Vector2d dP = (H.transpose() * H).ldlt().solve(H.transpose() * dR);
@@ -368,73 +382,97 @@ class UWBTransform : public rclcpp::Node {
 			return vertices;
 			}
 			
-		void dynamic_localization() {
-			while (true) {
-				std::lock_guard<std::mutex> lock(data_mutex);
+		nav_msgs::msg::Odometry diffOdom(const nav_msgs::msg::Odometry curr, const nav_msgs::msg::Odometry prev) {
+			nav_msgs::msg::Odometry delta;
 
-				// 1. Compute new candidate positions first
-				pos_dynamic = this->calculate_2Point(
+			delta.header.stamp = curr.header.stamp;
+			delta.header.frame_id = curr.header.frame_id;
+			delta.child_frame_id = curr.child_frame_id;
+
+			delta.pose.pose.position.x = curr.pose.pose.position.x - prev.pose.pose.position.x;
+			delta.pose.pose.position.y = curr.pose.pose.position.y - prev.pose.pose.position.y;
+			delta.pose.pose.position.z = curr.pose.pose.position.z - prev.pose.pose.position.z;
+
+			delta.pose.pose.orientation.w = 1.0;
+
+			return delta;
+		}
+		
+		void addVelocity(nav_msgs::msg::Odometry& delta, const nav_msgs::msg::Odometry& curr, const nav_msgs::msg::Odometry& prev) {
+			rclcpp::Time t_curr(curr.header.stamp);
+			rclcpp::Time t_prev(prev.header.stamp);
+			double dt = (t_curr - t_prev).seconds();
+			if (dt <= 0.0) return;
+			
+			delta.twist.twist.linear.x =
+				delta.pose.pose.position.x / dt;
+			delta.twist.twist.linear.y =
+				delta.pose.pose.position.y / dt;
+		}
+
+		void dynamic_localization() {
+			std::lock_guard<std::mutex> lock(data_mutex);
+
+			// 1. Compute new candidate positions first
+			pos_dynamic = this->calculate_2Point(
+				Eigen::Vector2d(x2, y2),
+				Eigen::Vector2d(x3, y3),
+				d2, d3
+			);
+
+			// Extract raw candidate (positive branch)
+			Eigen::Vector2d candidate_raw(pos_dynamic[0][0], pos_dynamic[0][1]);
+
+			bool first_frame = (std::fabs(d2_prev - d2) == 0.0) ||
+							   (std::fabs(d3_prev - d3) == 0.0);
+
+			if (!first_frame) {
+				// 2. Pick sign using the NEW candidate
+				sign = this->pickInitialSignEigen(
 					Eigen::Vector2d(x2, y2),
 					Eigen::Vector2d(x3, y3),
-					d2, d3
+					Eigen::Vector2d(std::fabs(candidate_raw.x()), std::fabs(candidate_raw.y())),
+					d2_prev, d3_prev, d2, d3,
+					2.5
 				);
 
-				// Extract raw candidate (positive branch)
-				Eigen::Vector2d candidate_raw(pos_dynamic[0][0], pos_dynamic[0][1]);
+				// Fallback to previous sign if failed
+				if (!sign && sign_prev)
+					sign = sign_prev;
 
-				bool first_frame = (std::fabs(d2_prev - d2) == 0.0) ||
-								   (std::fabs(d3_prev - d3) == 0.0);
-
-				if (!first_frame) {
-					// 2. Pick sign using the NEW candidate
-					sign = this->pickInitialSignEigen(
-						Eigen::Vector2d(x2, y2),
-						Eigen::Vector2d(x3, y3),
-						Eigen::Vector2d(std::fabs(candidate_raw.x()), std::fabs(candidate_raw.y())),
-						d2_prev, d3_prev, d2, d3,
-						2.5
-					);
-
-					// Fallback to previous sign if failed
-					if (!sign && sign_prev)
-						sign = sign_prev;
-
-					// Update previous sign if valid
-					if (sign && (*sign != 0))
-						sign_prev = sign;
-				}
-
-				// Update prev ranges
-				d2_prev = d2;
-				d3_prev = d3;
-
-				// 3. Select correct branch
-				if (pos_dynamic.size() > 1 && sign) {
-					if (*sign > 0) {
-						x_dynamic = pos_dynamic[0][0];
-						y_dynamic = pos_dynamic[0][1];
-					} else {
-						x_dynamic = pos_dynamic[1][0];
-						y_dynamic = pos_dynamic[1][1];
-					}
-				}
-
-				// 4. Compute yaw
-				q_dynamic = this->calculateYaw(x_dynamic, y_dynamic);
-
-				std::this_thread::sleep_for(5ms);
+				// Update previous sign if valid
+				if (sign && (*sign != 0))
+					sign_prev = sign;
 			}
+
+			// Update prev ranges
+			d2_prev = d2;
+			d3_prev = d3;
+
+			// 3. Select correct branch
+			if (pos_dynamic.size() > 1 && sign) {
+				if (*sign > 0) {
+					x_dynamic = pos_dynamic[0][0];
+					y_dynamic = pos_dynamic[0][1];
+				} else {
+					x_dynamic = pos_dynamic[1][0];
+					y_dynamic = pos_dynamic[1][1];
+				}
+			}
+
+			// 4. Compute yaw
+			q_dynamic = this->calculateYaw(x_dynamic, y_dynamic);
+
+			std::this_thread::sleep_for(5ms);
 		}
 
 		void static_localization() {
-				while (true) {
-					std::lock_guard<std::mutex> lock(data_mutex);
-					pos_static = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x5,y5), d1, d4, d5);
-					x_static = pos_static[0];
-					y_static = pos_static[1];
-					q_static = this->calculateYaw(x_static, y_static);
-					std::this_thread::sleep_for(5ms);
-				}
+				std::lock_guard<std::mutex> lock(data_mutex);
+				pos_static = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x5,y5), d1, d4, d5);
+				x_static = pos_static[0];
+				y_static = pos_static[1];
+				q_static = this->calculateYaw(x_static, y_static);
+				std::this_thread::sleep_for(5ms);
 			}
 			
 		void timer_callback() {
@@ -474,14 +512,6 @@ class UWBTransform : public rclcpp::Node {
 			static_odom_msg.twist.twist.linear.z = 0;
 			
 			dynamic_odom_msg.pose.covariance = {
-					0.2, 0, 0, 0, 0, 0,
-					0, 0.2, 0, 0, 0, 0,
-					0, 0, 99999, 0, 0, 0,
-					0, 0, 0, 99999, 0, 0,
-					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 99999
-				};
-			dynamic_odom_msg.twist.covariance = {
 					99999, 0, 0, 0, 0, 0,
 					0, 99999, 0, 0, 0, 0,
 					0, 0, 99999, 0, 0, 0,
@@ -489,14 +519,22 @@ class UWBTransform : public rclcpp::Node {
 					0, 0, 0, 0, 99999, 0,
 					0, 0, 0, 0, 0, 99999
 				};
-		
-			static_odom_msg.pose.covariance = {
-					0.01, 0, 0, 0, 0, 0,
-					0, 0.01, 0, 0, 0, 0,
+			dynamic_odom_msg.twist.covariance = {
+					0.05, 0, 0, 0, 0, 0,
+					0, 0.05, 0, 0, 0, 0,
 					0, 0, 99999, 0, 0, 0,
 					0, 0, 0, 99999, 0, 0,
 					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 99999
+					0, 0, 0, 0, 0, 0.07
+				};
+		
+			static_odom_msg.pose.covariance = {
+					0.05, 0, 0, 0, 0, 0,
+					0, 0.05, 0, 0, 0, 0,
+					0, 0, 99999, 0, 0, 0,
+					0, 0, 0, 99999, 0, 0,
+					0, 0, 0, 0, 99999, 0,
+					0, 0, 0, 0, 0, 0.1
 				};
 			static_odom_msg.twist.covariance = {
 					99999, 0, 0, 0, 0, 0,
@@ -507,8 +545,20 @@ class UWBTransform : public rclcpp::Node {
 					0, 0, 0, 0, 0, 99999
 				};
 			
-			publisher_dynamic->publish(dynamic_odom_msg);
 			publisher_static->publish(static_odom_msg);
+			
+			if (!has_prev) {
+				publisher_dynamic->publish(dynamic_odom_msg);
+				dynamic_odom_msg_prev = dynamic_odom_msg;
+				has_prev = true;
+				return;
+			}
+
+			delta =	diffOdom(dynamic_odom_msg, dynamic_odom_msg_prev);
+			addVelocity(delta, dynamic_odom_msg, dynamic_odom_msg_prev);
+
+			publisher_dynamic->publish(delta);
+			dynamic_odom_msg_prev = dynamic_odom_msg;
 		}
 	};
 
