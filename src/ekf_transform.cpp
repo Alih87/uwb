@@ -166,35 +166,6 @@ private:
 			y_stat = stat.pose.pose.position.y;
 			yaw_stat = stat.pose.pose.orientation;
 		}
-
-		tf2::fromMsg(static_odom_msg.pose.pose, T_map_tag);
-		tf2::fromMsg(dynamic_odom_msg.pose.pose, T_odom_tag);
-
-		T_map_odom = T_map_tag * T_odom_tag.inverse();
-		
-		//printTF2Transform(T_map_tag, "TF_map_tag");
-		//printTF2Transform(T_odom_tag, "TF_odom_tag");
-		
-		T_map_odom_msg.header.stamp = this->now();				
-		T_map_odom_msg.header.frame_id = "map_uwb";
-		T_map_odom_msg.child_frame_id  = "odom_uwb";
-
-		geometry_msgs::msg::Transform TF_map_odom, TF_odom_tag;
-		tf2::convert(T_odom_tag, TF_odom_tag);
-		tf2::convert(T_map_odom, TF_map_odom);
-
-		T_map_odom_msg.transform = TF_map_odom;
-		T_odom_tag_msg.transform = TF_odom_tag;
-		
-		x_tf = T_map_odom_msg.transform.translation.x;
-		y_tf = T_map_odom_msg.transform.translation.y;
-		yaw_tf = T_map_odom_msg.transform.rotation;
-		
-		x_dyn_tf = T_odom_tag_msg.transform.translation.x;
-		y_dyn_tf = T_odom_tag_msg.transform.translation.y;
-		yaw_dyn_tf = T_odom_tag_msg.transform.rotation;
-
-		tf_broadcaster_->sendTransform(T_map_odom_msg);
 		
 		if (delta_t >= 0.066667 && std::fabs(x_dyn - x_dyn_prev) > 0) {
 			logs.data[0] = (x_dyn - x_dyn_prev) / delta_t;

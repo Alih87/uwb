@@ -1,5 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp/executors/multi_threaded_executor.hpp>
+#include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2_ros/static_transform_broadcaster.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <example_interfaces/msg/float64.hpp>
@@ -398,17 +400,25 @@ class UWBTransform : public rclcpp::Node {
 			return delta;
 		}
 		
-		void addVelocity(nav_msgs::msg::Odometry& delta, const nav_msgs::msg::Odometry& curr, const nav_msgs::msg::Odometry& prev) {
-			rclcpp::Time t_curr(curr.header.stamp);
-			rclcpp::Time t_prev(prev.header.stamp);
-			double dt = (t_curr - t_prev).seconds();
-			if (dt <= 0.0) return;
-			
-			delta.twist.twist.linear.x =
-				delta.pose.pose.position.x / dt;
-			delta.twist.twist.linear.y =
-				delta.pose.pose.position.y / dt;
+		void addVelocity(nav_msgs::msg::Odometry& delta,
+                 const nav_msgs::msg::Odometry& curr,
+                 const nav_msgs::msg::Odometry& prev) {
+		  rclcpp::Time t_curr(curr.header.stamp);
+		  rclcpp::Time t_prev(prev.header.stamp);
+		  double dt = (t_curr - t_prev).seconds();
+		  if (dt <= 0.0) return;
+
+		  tf2::Quaternion q;
+		  tf2::fromMsg(curr.pose.pose.orientation, q);   // use curr, not dynamic_odom_msg
+		  double yaw = tf2::getYaw(q);
+
+		  double vx_world = delta.pose.pose.position.x / dt;
+		  double vy_world = delta.pose.pose.position.y / dt;
+
+		  delta.twist.twist.linear.x = std::cos(yaw) * vx_world + std::sin(yaw) * vy_world;
+		  delta.twist.twist.linear.y = -std::sin(yaw) * vx_world + std::cos(yaw) * vy_world;
 		}
+
 
 		void dynamic_localization() {
 			std::lock_guard<std::mutex> lock(data_mutex);
@@ -463,7 +473,7 @@ class UWBTransform : public rclcpp::Node {
 			// 4. Compute yaw
 			q_dynamic = this->calculateYaw(x_dynamic, y_dynamic);
 
-			std::this_thread::sleep_for(5ms);
+			//std::this_thread::sleep_for(5ms);
 		}
 
 		void static_localization() {
@@ -472,7 +482,7 @@ class UWBTransform : public rclcpp::Node {
 				x_static = pos_static[0];
 				y_static = pos_static[1];
 				q_static = this->calculateYaw(x_static, y_static);
-				std::this_thread::sleep_for(5ms);
+				//std::this_thread::sleep_for(5ms);
 			}
 			
 		void timer_callback() {
@@ -512,12 +522,12 @@ class UWBTransform : public rclcpp::Node {
 			static_odom_msg.twist.twist.linear.z = 0;
 			
 			dynamic_odom_msg.pose.covariance = {
-					99999, 0, 0, 0, 0, 0,
-					0, 99999, 0, 0, 0, 0,
-					0, 0, 99999, 0, 0, 0,
-					0, 0, 0, 99999, 0, 0,
-					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 99999
+					1e6, 0, 0, 0, 0, 0,
+					0, 1e6, 0, 0, 0, 0,
+					0, 0, 1e6, 0, 0, 0,
+					0, 0, 0, 1e6, 0, 0,
+					0, 0, 0, 0, 1e6, 0,
+					0, 0, 0, 0, 0, 1e6
 				};
 			dynamic_odom_msg.twist.covariance = {
 					0.05, 0, 0, 0, 0, 0,
@@ -525,37 +535,49 @@ class UWBTransform : public rclcpp::Node {
 					0, 0, 99999, 0, 0, 0,
 					0, 0, 0, 99999, 0, 0,
 					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 0.07
+					0, 0, 0, 0, 0, 99999
 				};
 		
 			static_odom_msg.pose.covariance = {
-					0.05, 0, 0, 0, 0, 0,
-					0, 0.05, 0, 0, 0, 0,
+					0.08, 0, 0, 0, 0, 0,
+					0, 0.08, 0, 0, 0, 0,
 					0, 0, 99999, 0, 0, 0,
 					0, 0, 0, 99999, 0, 0,
 					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 0.1
+					0, 0, 0, 0, 0, 0.8
 				};
 			static_odom_msg.twist.covariance = {
-					99999, 0, 0, 0, 0, 0,
-					0, 99999, 0, 0, 0, 0,
+					0.04, 0, 0, 0, 0, 0,
+					0, 0.04, 0, 0, 0, 0,
 					0, 0, 99999, 0, 0, 0,
 					0, 0, 0, 99999, 0, 0,
 					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 99999
+					0, 0, 0, 0, 0, 0.25
 				};
 			
 			publisher_static->publish(static_odom_msg);
 			
 			if (!has_prev) {
-				publisher_dynamic->publish(dynamic_odom_msg);
+				delta = nav_msgs::msg::Odometry();
+				delta.header.stamp = dynamic_odom_msg.header.stamp;
+				delta.header.frame_id = "odom_uwb";
+				delta.child_frame_id = "tag_link";
+				delta.pose.pose.orientation.w = 1.0;
+				publisher_dynamic->publish(delta);
 				dynamic_odom_msg_prev = dynamic_odom_msg;
 				has_prev = true;
 				return;
 			}
 
 			delta =	diffOdom(dynamic_odom_msg, dynamic_odom_msg_prev);
-			addVelocity(delta, dynamic_odom_msg, dynamic_odom_msg_prev);
+			//addVelocity(delta, dynamic_odom_msg, dynamic_odom_msg_prev);
+			delta.header.frame_id = "odom_uwb";
+			delta.child_frame_id  = "tag_link";
+
+			//delta.pose.pose.position.x = 0.0;
+			//delta.pose.pose.position.y = 0.0;
+			//delta.pose.pose.position.z = 0.0;
+			//delta.pose.pose.orientation.w = 1.0;
 
 			publisher_dynamic->publish(delta);
 			dynamic_odom_msg_prev = dynamic_odom_msg;
