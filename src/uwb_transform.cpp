@@ -522,16 +522,16 @@ class UWBTransform : public rclcpp::Node {
 			static_odom_msg.twist.twist.linear.z = 0;
 			
 			dynamic_odom_msg.pose.covariance = {
-					1e6, 0, 0, 0, 0, 0,
-					0, 1e6, 0, 0, 0, 0,
+					0.05, 0, 0, 0, 0, 0,
+					0, 0.05, 0, 0, 0, 0,
 					0, 0, 1e6, 0, 0, 0,
 					0, 0, 0, 1e6, 0, 0,
 					0, 0, 0, 0, 1e6, 0,
 					0, 0, 0, 0, 0, 1e6
 				};
 			dynamic_odom_msg.twist.covariance = {
-					0.05, 0, 0, 0, 0, 0,
-					0, 0.05, 0, 0, 0, 0,
+					99999, 0, 0, 0, 0, 0,
+					0, 99999, 0, 0, 0, 0,
 					0, 0, 99999, 0, 0, 0,
 					0, 0, 0, 99999, 0, 0,
 					0, 0, 0, 0, 99999, 0,
