@@ -15,7 +15,8 @@ STATIC_ANCHORS = {
 
 DYNAMIC_ANCHORS = {
 "anc1":["0.36","-0.435"],
-"anc2":["0.36","0.435"]
+#"anc2":["0.36","0.435"]
+"anc2":["1.265","-0.52"]
 }
 
 DUAL_EKF_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb.yaml')
@@ -233,25 +234,25 @@ def generate_launch_description():
 		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','base_link','gps']
 	)
 	
-    ekf_filter_node_odom = Node(
-	package="robot_localization",
-	executable="ekf_node",
-	name="ekf_filter_node_odom",
-	parameters=[{"ekf_filter_node_odom": ""}, DUAL_EKF_PARAMS],
-	remappings=[('odometry/filtered', 'uwb/dynamic_filtered')]
+    ekf_filter_node_fused = Node(
+		package="robot_localization",
+		executable="ekf_node",
+		name="ekf_filter_node_fused",
+		parameters=[{"ekf_filter_node_fused": ""}, DUAL_EKF_PARAMS],
+		remappings=[('odometry/filtered', 'uwb/dyn_fused')]
 	)
 	
     ekf_filter_node_map = Node(
-	package="robot_localization",
-	executable="ekf_node",
-	name="ekf_filter_node_map",
-	parameters=[{"ekf_filter_node_map": ""}, DUAL_EKF_PARAMS],
-	remappings=[('odometry/filtered', 'uwb/static_filtered')]
+		package="robot_localization",
+		executable="ekf_node",
+		name="ekf_filter_node_map",
+		parameters=[{"ekf_filter_node_map": ""}, DUAL_EKF_PARAMS],
+		remappings=[('odometry/filtered', 'uwb/static_filtered')]
 	)
 	
     delayed_scout = TimerAction(
-	period=7.0,
-	actions=[scout_base_node]
+		period=7.0,
+		actions=[scout_base_node]
 	)
 
     # --- Return LaunchDescription ---
@@ -268,7 +269,7 @@ def generate_launch_description():
         umx_driver_node,
         uwb_rcv_node,
         uwb_tf_node,
-        ekf_filter_node_odom,
+        ekf_filter_node_fused,
         ekf_filter_node_map,
         ekf_tf_node,
         #dynamic_tf_node,

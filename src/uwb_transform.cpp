@@ -77,6 +77,9 @@ class UWBTransform : public rclcpp::Node {
 						dynamic_center_y = *sum_y / *count;
 						}
 			
+			dynamic_center_x = x3;
+			dynamic_center_y = y3;
+			
 			*sum_x = 0.0;
 			*sum_y = 0.0;
 			*count = 0;
@@ -121,14 +124,16 @@ class UWBTransform : public rclcpp::Node {
 			subscription_anc5 = this->create_subscription<example_interfaces::msg::Float64>(
 							"uwb/d_anc4", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(5, msg);});
-			publisher_dynamic = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dynamic_odom", qos_odom);
+			publisher_dynamic1_4_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dyn_odom1_4_3", qos_odom);
+			publisher_dynamic1_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dyn_odom1_5_3", qos_odom);
+			publisher_dynamic4_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dyn_odom4_5_3", qos_odom);
 			publisher_static = this->create_publisher<nav_msgs::msg::Odometry>("uwb/static_odom", qos_odom);
 			timer_ = this->create_wall_timer(50ms, std::bind(&UWBTransform::timer_callback, this));
 			delta_timer_ = this->create_wall_timer(33.33ms, std::bind(&UWBTransform::time_delta, this));
 			
 			// dynamic anchor_tf 
 			dynamic_anc_tf.header.stamp = this->get_clock()->now();
-			dynamic_anc_tf.header.frame_id = "base_link";
+			dynamic_anc_tf.header.frame_id = "map_uwb";
 			dynamic_anc_tf.child_frame_id = "dynamic_anc_link";
 			
 			dynamic_anc_tf.transform.translation.x = dynamic_center_x;
@@ -162,16 +167,21 @@ class UWBTransform : public rclcpp::Node {
 			
 			tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 			
-			dynamic_timer_ = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization, this));
+			dynamic_timer1_4_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization1_4_3, this));
+			dynamic_timer1_5_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization1_5_3, this));
+			dynamic_timer4_5_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization4_5_3, this));
 			static_timer_ = this->create_wall_timer(5ms, std::bind(&UWBTransform::static_localization, this));
 			}
 	
 	private:
 		std::mutex data_mutex;
+		nav_msgs::msg::Odometry dynamic_odom_msg1_4_3;
+		nav_msgs::msg::Odometry dynamic_odom_msg1_5_3;
+		nav_msgs::msg::Odometry dynamic_odom_msg4_5_3;
 		nav_msgs::msg::Odometry dynamic_odom_msg, dynamic_odom_msg_prev, delta;
 		nav_msgs::msg::Odometry static_odom_msg;
 		
-		double x_dynamic = 0.0, y_dynamic = 0.0;
+		double x_dynamic1_4_3 = 0.0, y_dynamic1_4_3 = 0.0, x_dynamic1_5_3 = 0.0, y_dynamic1_5_3 = 0.0, x_dynamic4_5_3 = 0.0, y_dynamic4_5_3 = 0.0;
 		double x_static = 0.0, y_static = 0.0;
 		double x1 = 0.0, y1 = 0.0;
 		double x2 = 0.0, y2 = 0.0;
@@ -186,7 +196,7 @@ class UWBTransform : public rclcpp::Node {
 		//double uwb_center_x = (x1 + x2 + x3) / 3, uwb_center_y = (y1 + y2 + y3) / 3;
 		double static_center_x = 0.0, static_center_y = 0.0;
 		double dynamic_center_x = 0.0, dynamic_center_y = 0.0;
-		Eigen::Quaterniond q_dynamic, q_static;
+		Eigen::Quaterniond q_static, q_dynamic1_4_3, q_dynamic1_5_3, q_dynamic4_5_3;
 		std::optional<int> sign;
 		std::optional<int> sign_prev;
 		bool has_prev = false;
@@ -195,8 +205,8 @@ class UWBTransform : public rclcpp::Node {
 		
 		rclcpp::QoS qos_anc{rclcpp::KeepLast(3)};
 		rclcpp::QoS qos_odom{rclcpp::KeepLast(3)};
-		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_dynamic, publisher_static;
-		rclcpp::TimerBase::SharedPtr timer_, delta_timer_, dynamic_timer_, static_timer_;
+		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_dynamic1_4_3, publisher_dynamic1_5_3, publisher_dynamic4_5_3, publisher_static;
+		rclcpp::TimerBase::SharedPtr timer_, delta_timer_, dynamic_timer1_4_3, dynamic_timer1_5_3, dynamic_timer4_5_3, static_timer_;
 		
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc1;
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc2;
@@ -204,8 +214,8 @@ class UWBTransform : public rclcpp::Node {
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc4;
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc5;
 		
-		Eigen::Vector2d pos_static;				// In case of 3-point ranging
-		std::vector<Eigen::Vector2d> pos_dynamic;	// In case of 2-point ranging
+		Eigen::Vector2d pos_static;
+		Eigen::Vector2d pos_dynamic, pos_dynamic1_4_3, pos_dynamic1_5_3, pos_dynamic4_5_3;
 		
 		std::shared_ptr<tf2_ros::StaticTransformBroadcaster> dynamic_anc_broadcaster_, static_anc_broadcaster_;
 		std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -420,108 +430,110 @@ class UWBTransform : public rclcpp::Node {
 		}
 
 
-		void dynamic_localization() {
+		void dynamic_localization1_4_3() {
 			std::lock_guard<std::mutex> lock(data_mutex);
-
-			// 1. Compute new candidate positions first
-			pos_dynamic = this->calculate_2Point(
-				Eigen::Vector2d(x2, y2),
-				Eigen::Vector2d(x3, y3),
-				d2, d3
-			);
-
-			// Extract raw candidate (positive branch)
-			Eigen::Vector2d candidate_raw(pos_dynamic[0][0], pos_dynamic[0][1]);
-
-			bool first_frame = (std::fabs(d2_prev - d2) == 0.0) ||
-							   (std::fabs(d3_prev - d3) == 0.0);
-
-			if (!first_frame) {
-				// 2. Pick sign using the NEW candidate
-				sign = this->pickInitialSignEigen(
-					Eigen::Vector2d(x2, y2),
-					Eigen::Vector2d(x3, y3),
-					Eigen::Vector2d(std::fabs(candidate_raw.x()), std::fabs(candidate_raw.y())),
-					d2_prev, d3_prev, d2, d3,
-					2.5
-				);
-
-				// Fallback to previous sign if failed
-				if (!sign && sign_prev)
-					sign = sign_prev;
-
-				// Update previous sign if valid
-				if (sign && (*sign != 0))
-					sign_prev = sign;
-			}
-
-			// Update prev ranges
-			d2_prev = d2;
-			d3_prev = d3;
-
-			// 3. Select correct branch
-			if (pos_dynamic.size() > 1 && sign) {
-				if (*sign > 0) {
-					x_dynamic = pos_dynamic[0][0];
-					y_dynamic = pos_dynamic[0][1];
-				} else {
-					x_dynamic = pos_dynamic[1][0];
-					y_dynamic = pos_dynamic[1][1];
-				}
-			}
-
-			// 4. Compute yaw
-			q_dynamic = this->calculateYaw(x_dynamic, y_dynamic);
-
+			pos_dynamic1_4_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d1, d4, d3);
+			x_dynamic1_4_3 = pos_dynamic1_4_3[0];
+			y_dynamic1_4_3 = pos_dynamic1_4_3[1];
+			q_dynamic1_4_3 = this->calculateYaw(x_dynamic1_4_3, y_dynamic1_4_3);
+			//std::this_thread::sleep_for(5ms);
+		}
+		
+		void dynamic_localization1_5_3() {
+			std::lock_guard<std::mutex> lock(data_mutex);
+			pos_dynamic1_5_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d1, d5, d3);
+			x_dynamic1_5_3 = pos_dynamic1_5_3[0];
+			y_dynamic1_5_3 = pos_dynamic1_5_3[1];
+			q_dynamic1_5_3 = this->calculateYaw(x_dynamic1_5_3, y_dynamic1_5_3);
+			//std::this_thread::sleep_for(5ms);
+		}
+		
+		void dynamic_localization4_5_3() {
+			std::lock_guard<std::mutex> lock(data_mutex);
+			pos_dynamic4_5_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d4, d5, d3);
+			x_dynamic4_5_3 = pos_dynamic4_5_3[0];
+			y_dynamic4_5_3 = pos_dynamic4_5_3[1];
+			q_dynamic4_5_3 = this->calculateYaw(x_dynamic4_5_3, y_dynamic4_5_3);
 			//std::this_thread::sleep_for(5ms);
 		}
 
 		void static_localization() {
-				std::lock_guard<std::mutex> lock(data_mutex);
-				pos_static = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x5,y5), d1, d4, d5);
-				x_static = pos_static[0];
-				y_static = pos_static[1];
-				q_static = this->calculateYaw(x_static, y_static);
-				//std::this_thread::sleep_for(5ms);
-			}
+			std::lock_guard<std::mutex> lock(data_mutex);
+			pos_static = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x5,y5), d1, d4, d5);
+			x_static = pos_static[0];
+			y_static = pos_static[1];
+			q_static = this->calculateYaw(x_static, y_static);
+			//std::this_thread::sleep_for(5ms);
+		}
 			
 		void timer_callback() {
 			std::lock_guard<std::mutex> lock(data_mutex);
 			
-			dynamic_odom_msg.header.stamp = this->get_clock()->now();
+			dynamic_odom_msg1_4_3.header.stamp = this->get_clock()->now();
+			dynamic_odom_msg1_5_3.header.stamp = this->get_clock()->now();
+			dynamic_odom_msg4_5_3.header.stamp = this->get_clock()->now();
+			
 			static_odom_msg.header.stamp = dynamic_odom_msg.header.stamp;
 			
-			dynamic_odom_msg.header.frame_id = "odom_uwb";
-			dynamic_odom_msg.child_frame_id  = "tag_link";
+			dynamic_odom_msg1_4_3.header.frame_id = "map_uwb";
+			dynamic_odom_msg1_4_3.child_frame_id  = "tag_link";
+			dynamic_odom_msg1_5_3.header.frame_id = "map_uwb";
+			dynamic_odom_msg1_5_3.child_frame_id  = "tag_link";
+			dynamic_odom_msg4_5_3.header.frame_id = "map_uwb";
+			dynamic_odom_msg1_4_3.child_frame_id  = "tag_link";
+			
 			static_odom_msg.header.frame_id = "map_uwb";
 			static_odom_msg.child_frame_id  = "tag_link";
 			
 			// Translation
-			dynamic_odom_msg.pose.pose.position.x = x_dynamic;
-			dynamic_odom_msg.pose.pose.position.y = y_dynamic;
-			dynamic_odom_msg.pose.pose.position.z = 0.0;
+			dynamic_odom_msg1_4_3.pose.pose.position.x = x_dynamic1_4_3;
+			dynamic_odom_msg1_4_3.pose.pose.position.y = y_dynamic1_4_3;
+			dynamic_odom_msg1_4_3.pose.pose.position.z = 0.0;
+			dynamic_odom_msg1_5_3.pose.pose.position.x = x_dynamic1_5_3;
+			dynamic_odom_msg1_5_3.pose.pose.position.y = y_dynamic1_5_3;
+			dynamic_odom_msg1_5_3.pose.pose.position.z = 0.0;
+			dynamic_odom_msg4_5_3.pose.pose.position.x = x_dynamic4_5_3;
+			dynamic_odom_msg4_5_3.pose.pose.position.y = y_dynamic4_5_3;
+			dynamic_odom_msg4_5_3.pose.pose.position.z = 0.0;
+			
 			static_odom_msg.pose.pose.position.x = x_static;
 			static_odom_msg.pose.pose.position.y = y_static;
 			static_odom_msg.pose.pose.position.z = 0.0;
 			
 			// Tag orientation wrt the uwb anchor positions (x1,y1),(x2,y2) and (x3,y3)
-			dynamic_odom_msg.pose.pose.orientation.x = q_dynamic.x();
-			dynamic_odom_msg.pose.pose.orientation.y = q_dynamic.y();
-			dynamic_odom_msg.pose.pose.orientation.z = q_dynamic.z();
-			dynamic_odom_msg.pose.pose.orientation.w = q_dynamic.w();
+			dynamic_odom_msg1_4_3.pose.pose.orientation.x = q_dynamic1_4_3.x();
+			dynamic_odom_msg1_4_3.pose.pose.orientation.y = q_dynamic1_4_3.y();
+			dynamic_odom_msg1_4_3.pose.pose.orientation.z = q_dynamic1_4_3.z();
+			dynamic_odom_msg1_4_3.pose.pose.orientation.w = q_dynamic1_4_3.w();
+			dynamic_odom_msg1_5_3.pose.pose.orientation.x = q_dynamic1_5_3.x();
+			dynamic_odom_msg1_5_3.pose.pose.orientation.y = q_dynamic1_5_3.y();
+			dynamic_odom_msg1_5_3.pose.pose.orientation.z = q_dynamic1_5_3.z();
+			dynamic_odom_msg1_5_3.pose.pose.orientation.w = q_dynamic1_5_3.w();
+			dynamic_odom_msg4_5_3.pose.pose.orientation.x = q_dynamic4_5_3.x();
+			dynamic_odom_msg4_5_3.pose.pose.orientation.y = q_dynamic4_5_3.y();
+			dynamic_odom_msg4_5_3.pose.pose.orientation.z = q_dynamic4_5_3.z();
+			dynamic_odom_msg4_5_3.pose.pose.orientation.w = q_dynamic4_5_3.w();
+			
 			static_odom_msg.pose.pose.orientation.x = q_static.x();
 			static_odom_msg.pose.pose.orientation.y = q_static.y();
 			static_odom_msg.pose.pose.orientation.z = q_static.z();
 			static_odom_msg.pose.pose.orientation.w = q_static.w();
 			
-			dynamic_odom_msg.twist.twist.linear.x = 0;
-			dynamic_odom_msg.twist.twist.linear.y = 0;
-			dynamic_odom_msg.twist.twist.linear.z = 0;
+			dynamic_odom_msg1_4_3.twist.twist.linear.x = 0;
+			dynamic_odom_msg1_4_3.twist.twist.linear.y = 0;
+			dynamic_odom_msg1_4_3.twist.twist.linear.z = 0;
+			dynamic_odom_msg1_5_3.twist.twist.linear.x = 0;
+			dynamic_odom_msg1_5_3.twist.twist.linear.y = 0;
+			dynamic_odom_msg1_5_3.twist.twist.linear.z = 0;
+			dynamic_odom_msg4_5_3.twist.twist.linear.x = 0;
+			dynamic_odom_msg4_5_3.twist.twist.linear.y = 0;
+			dynamic_odom_msg4_5_3.twist.twist.linear.z = 0;
+			
 			static_odom_msg.twist.twist.linear.x = 0;
 			static_odom_msg.twist.twist.linear.y = 0;
 			static_odom_msg.twist.twist.linear.z = 0;
 			
-			dynamic_odom_msg.pose.covariance = {
+			dynamic_odom_msg1_4_3.pose.covariance = {
 					0.05, 0, 0, 0, 0, 0,
 					0, 0.05, 0, 0, 0, 0,
 					0, 0, 1e6, 0, 0, 0,
@@ -529,7 +541,39 @@ class UWBTransform : public rclcpp::Node {
 					0, 0, 0, 0, 1e6, 0,
 					0, 0, 0, 0, 0, 1e6
 				};
-			dynamic_odom_msg.twist.covariance = {
+			dynamic_odom_msg1_5_3.pose.covariance = {
+					0.05, 0, 0, 0, 0, 0,
+					0, 0.05, 0, 0, 0, 0,
+					0, 0, 1e6, 0, 0, 0,
+					0, 0, 0, 1e6, 0, 0,
+					0, 0, 0, 0, 1e6, 0,
+					0, 0, 0, 0, 0, 1e6
+				};
+			dynamic_odom_msg4_5_3.pose.covariance = {
+					0.05, 0, 0, 0, 0, 0,
+					0, 0.05, 0, 0, 0, 0,
+					0, 0, 1e6, 0, 0, 0,
+					0, 0, 0, 1e6, 0, 0,
+					0, 0, 0, 0, 1e6, 0,
+					0, 0, 0, 0, 0, 1e6
+				};
+			dynamic_odom_msg1_4_3.twist.covariance = {
+					99999, 0, 0, 0, 0, 0,
+					0, 99999, 0, 0, 0, 0,
+					0, 0, 99999, 0, 0, 0,
+					0, 0, 0, 99999, 0, 0,
+					0, 0, 0, 0, 99999, 0,
+					0, 0, 0, 0, 0, 99999
+				};
+			dynamic_odom_msg1_5_3.twist.covariance = {
+					99999, 0, 0, 0, 0, 0,
+					0, 99999, 0, 0, 0, 0,
+					0, 0, 99999, 0, 0, 0,
+					0, 0, 0, 99999, 0, 0,
+					0, 0, 0, 0, 99999, 0,
+					0, 0, 0, 0, 0, 99999
+				};
+			dynamic_odom_msg4_5_3.twist.covariance = {
 					99999, 0, 0, 0, 0, 0,
 					0, 99999, 0, 0, 0, 0,
 					0, 0, 99999, 0, 0, 0,
@@ -556,31 +600,9 @@ class UWBTransform : public rclcpp::Node {
 				};
 			
 			publisher_static->publish(static_odom_msg);
-			
-			if (!has_prev) {
-				delta = nav_msgs::msg::Odometry();
-				delta.header.stamp = dynamic_odom_msg.header.stamp;
-				delta.header.frame_id = "odom_uwb";
-				delta.child_frame_id = "tag_link";
-				delta.pose.pose.orientation.w = 1.0;
-				publisher_dynamic->publish(delta);
-				dynamic_odom_msg_prev = dynamic_odom_msg;
-				has_prev = true;
-				return;
-			}
-
-			delta =	diffOdom(dynamic_odom_msg, dynamic_odom_msg_prev);
-			//addVelocity(delta, dynamic_odom_msg, dynamic_odom_msg_prev);
-			delta.header.frame_id = "odom_uwb";
-			delta.child_frame_id  = "tag_link";
-
-			//delta.pose.pose.position.x = 0.0;
-			//delta.pose.pose.position.y = 0.0;
-			//delta.pose.pose.position.z = 0.0;
-			//delta.pose.pose.orientation.w = 1.0;
-
-			publisher_dynamic->publish(delta);
-			dynamic_odom_msg_prev = dynamic_odom_msg;
+			publisher_dynamic1_4_3->publish(dynamic_odom_msg1_4_3);
+			publisher_dynamic1_5_3->publish(dynamic_odom_msg1_5_3);
+			publisher_dynamic4_5_3->publish(dynamic_odom_msg4_5_3);
 		}
 	};
 

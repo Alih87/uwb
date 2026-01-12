@@ -25,7 +25,7 @@ public:
 		qos_metric.durability_volatile();
 		
         uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/dynamic_filtered", qos_odom,
+            "uwb/dyn_fused", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback(msg); });
 
         uwb_static_sub = this->create_subscription<nav_msgs::msg::Odometry>(
