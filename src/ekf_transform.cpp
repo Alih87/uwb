@@ -25,27 +25,46 @@ public:
 		qos_metric.durability_volatile();
 		
         uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
+            "uwb/static_odom", qos_odom,
+            [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->static_callback(msg); });
+            
+        uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
             "uwb/dyn_fused", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback(msg); });
+            
+        uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
+            "uwb/dyn_odom1_4_3", qos_odom,
+            [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback1_4_3(msg); });
+            
+        uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
+            "uwb/dyn_odom1_5_3", qos_odom,
+            [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback1_5_3(msg); });
+            
+        uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
+            "uwb/dyn_odom4_5_3", qos_odom,
+            [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback4_5_3(msg); });
 
         uwb_static_sub = this->create_subscription<nav_msgs::msg::Odometry>(
             "uwb/static_filtered", qos_odom,
-            [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->static_callback(msg); });
+            [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->static_filtered_callback(msg); });
             
         logs_pub_ = this->create_publisher<example_interfaces::msg::Float64MultiArray>("/ekf/metrics", 2);
-		logs.data.resize(12, 0.0);
+		logs.data.resize(24, 0.0);
 
 
         tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
 		timer_ = this->create_wall_timer(50ms, std::bind(&EKFTransform::timer_callback, this));
-
 		delta_timer_ = this->create_wall_timer(66ms, std::bind(&EKFTransform::time_delta, this));
     }
 
 private:
-    nav_msgs::msg::Odometry dynamic_odom_msg;
+	nav_msgs::msg::Odometry dynamic_1_4_3_msg;
+	nav_msgs::msg::Odometry dynamic_1_5_3_msg;
+	nav_msgs::msg::Odometry dynamic_4_5_3_msg;
+	nav_msgs::msg::Odometry dynamic_odom_msg;
     nav_msgs::msg::Odometry static_odom_msg;
+    nav_msgs::msg::Odometry static_odom_filtered_msg;
     
     tf2::Transform T_map_tag, T_odom_tag, T_map_odom;
     geometry_msgs::msg::TransformStamped T_map_odom_msg, T_odom_tag_msg;
@@ -61,7 +80,9 @@ private:
 	// logs = [x_stat, y_stat, theta_stat, x_dyn, y_dyn, theta_dyn, ]
 	example_interfaces::msg::Float64MultiArray logs;
     float x_dyn_prev = 0., x_stat_prev = 0., y_dyn_prev = 0., y_stat_prev = 0., x_tf_prev = 0., y_tf_prev = 0., x_dyn_tf_prev = 0., y_dyn_tf_prev = 0.;
-	geometry_msgs::msg::Quaternion yaw_dyn_prev, yaw_stat_prev, yaw_tf_prev, yaw_dyn_tf_prev;
+    float x_dyn_1_4_3_prev = 0., x_dyn_1_5_3_prev = 0., x_dyn_4_5_3_prev = 0., x_stat_filtered_prev = 0.;
+    float y_dyn_1_4_3_prev = 0., y_dyn_1_5_3_prev = 0., y_dyn_4_5_3_prev = 0., y_stat_filtered_prev = 0.;
+	geometry_msgs::msg::Quaternion yaw_dyn_prev, yaw_stat_prev, yaw_dyn1_4_3_prev, yaw_dyn1_5_3_prev, yaw_dyn4_5_3_prev, yaw_stat_filtered_prev, yaw_tf_prev, yaw_dyn_tf_prev;
 	rclcpp::Time t_prev = this->get_clock()->now();
 	double delta_t = 0.;
 
@@ -81,10 +102,30 @@ private:
         std::lock_guard<std::mutex> lk(mtx_);
         static_odom_msg = *msg;
     }
+    
+    void static_filtered_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
+        std::lock_guard<std::mutex> lk(mtx_);
+        static_odom_filtered_msg = *msg;
+    }
 
     void dynamic_callback(const nav_msgs::msg::Odometry::SharedPtr msg) {
         std::lock_guard<std::mutex> lk(mtx_);
         dynamic_odom_msg = *msg;
+    }
+    
+    void dynamic_callback1_4_3(const nav_msgs::msg::Odometry::SharedPtr msg) {
+        std::lock_guard<std::mutex> lk(mtx_);
+        dynamic_1_4_3_msg = *msg;
+    }
+    
+    void dynamic_callback1_5_3(const nav_msgs::msg::Odometry::SharedPtr msg) {
+        std::lock_guard<std::mutex> lk(mtx_);
+        dynamic_1_5_3_msg = *msg;
+    }
+    
+    void dynamic_callback4_5_3(const nav_msgs::msg::Odometry::SharedPtr msg) {
+        std::lock_guard<std::mutex> lk(mtx_);
+        dynamic_4_5_3_msg = *msg;
     }
     
     void printTransform(const geometry_msgs::msg::Transform& tf_msg, const std::string& name = "")
@@ -148,15 +189,21 @@ private:
 	}
 	
     void timer_callback() {
-		nav_msgs::msg::Odometry dyn, stat;
-		float x_dyn, x_stat, y_dyn, y_stat, x_tf, y_tf, x_dyn_tf, y_dyn_tf;
-		geometry_msgs::msg::Quaternion yaw_dyn, yaw_stat, yaw_tf, yaw_dyn_tf;
+		nav_msgs::msg::Odometry dyn, dyn1_4_3, dyn1_5_3, dyn4_5_3, stat, stat_filtered;
+		float x_dyn, x_stat, x_stat_filtered, y_dyn, y_stat, y_stat_filtered, x_tf, y_tf, x_dyn_tf, y_dyn_tf;
+		float x_dyn_1_4_3, x_dyn_1_5_3, x_dyn_4_5_3;
+		float y_dyn_1_4_3, y_dyn_1_5_3, y_dyn_4_5_3;
+		geometry_msgs::msg::Quaternion yaw_dyn, yaw_stat, yaw_dyn1_4_3, yaw_dyn1_5_3, yaw_dyn4_5_3, yaw_stat_filtered, yaw_tf, yaw_dyn_tf;
 		tf2::Quaternion q_, q_prev;
 		
 		{
 			std::lock_guard<std::mutex> lk(mtx_);
 			dyn = dynamic_odom_msg;
 			stat = static_odom_msg;
+			stat_filtered = static_odom_filtered_msg;
+			dyn1_4_3 = dynamic_1_4_3_msg;
+			dyn1_5_3 = dynamic_1_5_3_msg;
+			dyn4_5_3 = dynamic_4_5_3_msg;
 			
 			x_dyn = dyn.pose.pose.position.x;
 			y_dyn = dyn.pose.pose.position.y;
@@ -165,6 +212,22 @@ private:
 			x_stat = stat.pose.pose.position.x;
 			y_stat = stat.pose.pose.position.y;
 			yaw_stat = stat.pose.pose.orientation;
+			
+			x_stat_filtered = stat_filtered.pose.pose.position.x;
+			y_stat_filtered = stat_filtered.pose.pose.position.y;
+			yaw_stat_filtered = stat_filtered.pose.pose.orientation;
+			
+			x_dyn_1_4_3 = dyn1_4_3.pose.pose.position.x;
+			y_dyn_1_4_3 = dyn1_4_3.pose.pose.position.y;
+			yaw_dyn1_4_3 = dyn1_4_3.pose.pose.orientation;
+			
+			x_dyn_1_5_3 = dyn1_5_3.pose.pose.position.x;
+			y_dyn_1_5_3 = dyn1_5_3.pose.pose.position.y;
+			yaw_dyn1_5_3 = dyn1_5_3.pose.pose.orientation;
+			
+			x_dyn_4_5_3 = dyn4_5_3.pose.pose.position.x;
+			y_dyn_4_5_3 = dyn4_5_3.pose.pose.position.y;
+			yaw_dyn4_5_3 = dyn4_5_3.pose.pose.orientation;
 		}
 		
 		if (delta_t >= 0.066667 && std::fabs(x_dyn - x_dyn_prev) > 0) {
@@ -187,23 +250,70 @@ private:
 			y_stat_prev = y_stat;
 			yaw_stat_prev = yaw_stat;
 		}
-		if (delta_t >= 0.066667 && std::fabs(x_tf - x_tf_prev) > 0) {
-			logs.data[6] = (x_tf - x_tf_prev) / delta_t;
-			logs.data[9] = (x_dyn_tf - x_dyn_tf_prev) / delta_t;
-			logs.data[7] = (y_tf - y_tf_prev) / delta_t;
-			logs.data[10] = (y_dyn_tf - y_dyn_tf_prev) / delta_t;
-			tf2::fromMsg(yaw_tf, q_);
-			tf2::fromMsg(yaw_tf_prev, q_prev);
+		if (delta_t >= 0.066667 && std::fabs(x_stat_filtered - x_stat_filtered_prev) > 0) {
+			logs.data[6] = (x_stat_filtered - x_stat_filtered_prev) / delta_t;
+			logs.data[7] = (y_stat_filtered - y_stat_filtered_prev) / delta_t;
+			tf2::fromMsg(yaw_stat_filtered, q_);
+			tf2::fromMsg(yaw_stat_filtered_prev, q_prev);
 			logs.data[8] = q_.angleShortestPath(q_prev) / delta_t;
-			tf2::fromMsg(yaw_dyn_tf, q_);
-			tf2::fromMsg(yaw_dyn_tf_prev, q_prev);
+			x_stat_filtered_prev = x_stat_filtered;
+			y_stat_filtered_prev = y_stat_filtered;
+			yaw_stat_filtered = yaw_stat_filtered_prev;
+		}
+		if (delta_t >= 0.066667 && std::fabs(x_dyn_1_4_3 - x_dyn_1_4_3_prev) > 0) {
+			logs.data[9] = (x_dyn_1_4_3 - x_dyn_1_4_3_prev) / delta_t;
+			logs.data[10] = (y_dyn_1_4_3 - y_dyn_1_4_3_prev) / delta_t;
+			tf2::fromMsg(yaw_dyn1_4_3, q_);
+			tf2::fromMsg(yaw_dyn1_4_3_prev, q_prev);
 			logs.data[11] = q_.angleShortestPath(q_prev) / delta_t;
-			x_tf_prev = x_tf;
-			y_tf_prev = y_tf;
-			yaw_tf_prev = yaw_tf;
-			x_dyn_tf_prev = x_tf;
-			y_dyn_tf_prev = y_tf;
-			yaw_dyn_tf_prev = yaw_tf;
+			x_dyn_1_4_3_prev = x_dyn_1_4_3;
+			y_dyn_1_4_3_prev = y_dyn_1_4_3;
+			yaw_dyn1_4_3_prev = yaw_dyn1_4_3;
+		}
+		if (delta_t >= 0.066667 && std::fabs(x_dyn_1_5_3 - x_dyn_1_5_3_prev) > 0) {
+			logs.data[12] = (x_dyn_1_5_3 - x_dyn_1_5_3_prev) / delta_t;
+			logs.data[13] = (y_dyn_1_5_3 - y_dyn_1_5_3_prev) / delta_t;
+			tf2::fromMsg(yaw_dyn1_5_3, q_);
+			tf2::fromMsg(yaw_dyn1_5_3_prev, q_prev);
+			logs.data[14] = q_.angleShortestPath(q_prev) / delta_t;
+			x_dyn_1_5_3_prev = x_dyn_1_5_3;
+			y_dyn_1_5_3_prev = y_dyn_1_5_3;
+			yaw_dyn1_5_3_prev = yaw_dyn1_5_3;
+		}
+		if (delta_t >= 0.066667 && std::fabs(x_dyn_4_5_3 - x_dyn_4_5_3_prev) > 0) {
+			logs.data[15] = (x_dyn_4_5_3 - x_dyn_4_5_3_prev) / delta_t;
+			logs.data[16] = (y_dyn_4_5_3 - y_dyn_4_5_3_prev) / delta_t;
+			tf2::fromMsg(yaw_dyn4_5_3, q_);
+			tf2::fromMsg(yaw_dyn4_5_3_prev, q_prev);
+			logs.data[17] = q_.angleShortestPath(q_prev) / delta_t;
+			x_dyn_4_5_3_prev = x_dyn_4_5_3;
+			y_dyn_4_5_3_prev = y_dyn_4_5_3;
+			yaw_dyn4_5_3_prev = yaw_dyn4_5_3;
+		}
+		if (delta_t >= 0.066667) {
+		logs.data[18] = sqrt(pow(x_stat_filtered - x_stat, 2) + pow(y_stat_filtered - y_stat, 2));
+		logs.data[19] = sqrt(pow(x_stat_filtered - x_dyn, 2) + pow(y_stat_filtered - y_dyn, 2));
+		logs.data[20] = sqrt(pow(x_stat - x_dyn, 2) + pow(y_stat - y_dyn, 2));
+		logs.data[21] = sqrt(pow(x_dyn - x_dyn_1_4_3, 2) + pow(y_dyn - y_dyn_1_4_3, 2))
+						+ sqrt(pow(x_dyn - x_dyn_1_5_3, 2) + pow(y_dyn - y_dyn_1_5_3, 2))
+						+ sqrt(pow(x_dyn - x_dyn_4_5_3, 2) + pow(y_dyn - y_dyn_4_5_3, 2));
+		logs.data[22] = sqrt(pow(x_dyn_1_4_3 - x_dyn_1_5_3, 2) + pow(y_dyn_1_4_3 - y_dyn_1_5_3, 2))
+						+ sqrt(pow(x_dyn_1_4_3 - x_dyn_4_5_3, 2) + pow(y_dyn_1_4_3 - y_dyn_4_5_3, 2))
+						+ sqrt(pow(x_dyn_1_5_3 - x_dyn_4_5_3, 2) + pow(y_dyn_1_5_3 - y_dyn_4_5_3, 2));
+		//	logs.data[20] = (y_tf - y_tf_prev) / delta_t;
+		//	logs.data[21] = (y_dyn_tf - y_dyn_tf_prev) / delta_t;
+		//	tf2::fromMsg(yaw_tf, q_);
+		//	tf2::fromMsg(yaw_tf_prev, q_prev);
+		//	logs.data[22] = q_.angleShortestPath(q_prev) / delta_t;
+		//	tf2::fromMsg(yaw_dyn_tf, q_);
+		//	tf2::fromMsg(yaw_dyn_tf_prev, q_prev);
+		//	logs.data[23] = q_.angleShortestPath(q_prev) / delta_t;
+		//	x_tf_prev = x_tf;
+		//	y_tf_prev = y_tf;
+		//	yaw_tf_prev = yaw_tf;
+		//	x_dyn_tf_prev = x_tf;
+		//	y_dyn_tf_prev = y_tf;
+		//	yaw_dyn_tf_prev = yaw_tf;
 		}
 		logs_pub_->publish(logs);
 	}

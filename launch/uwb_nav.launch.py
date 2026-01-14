@@ -107,14 +107,14 @@ def generate_launch_description():
         }],
         output='screen'
     )
-
+    
     umx_driver_node = Node(
         package='umx_driver',
         executable='um7_driver',
         name='um7_node',
         output='screen'
     )
-
+    
     uwb_rcv_node = Node(
         package='uwb_test',
         executable='uwb_rcv',
@@ -149,7 +149,7 @@ def generate_launch_description():
         name='dynamic_tf_pub',
         output='screen'
     )
-
+    
     rviz2_lidar_node = Node(
         package='rviz2',
         executable='rviz2',
