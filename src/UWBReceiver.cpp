@@ -18,9 +18,9 @@ public:
   UWBRcv()
   : Node("uwb_rcv")
   {
-	// Define QoS
-	qos_anc.best_effort();
-	qos_anc.durability_volatile();
+    // Define QoS
+    qos_anc.best_effort();
+    qos_anc.durability_volatile();
 
     publisher_anc1_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc0", qos_anc);
     publisher_anc2_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc1", qos_anc);
@@ -73,28 +73,73 @@ private:
   }
 
   void parse_and_publish(const std::string &msg) {
-    // Expect messages like "distance1:0.74" or "distance3:1.22"
+    size_t dash  = msg.find('-');
     size_t colon = msg.find(':');
-    if (colon == std::string::npos) return;
+    if (dash != std::string::npos && colon != std::string::npos && colon > dash + 1) {
 
-    std::string id = msg.substr(0, colon);
-    std::string val_str = msg.substr(colon + 1);
+        // Find the end of the status token
+        size_t end = msg.find('\r', colon + 1);
+        if (end == std::string::npos) end = msg.find('\n', colon + 1);
+        if (end == std::string::npos) end = msg.size();
+
+        // Extract the address and status
+        std::string esp_addr   = msg.substr(dash + 1, colon - (dash + 1));   // "10" or "20"
+        std::string esp_status = msg.substr(colon + 1, end - (colon + 1));   // "START" or "FINISHED"
+
+        RCLCPP_INFO(this->get_logger(), "Parsed: ESP_ADDR=%s, ESP_STATUS=%s", esp_addr.c_str(), esp_status.c_str());
+
+        if (esp_status == "FINISHED") {
+            if (esp_addr == "10") {
+                send_command_to_esp("20", "START");
+            } else if (esp_addr == "20") {
+                send_command_to_esp("10", "START");
+            } else {
+                std::cerr << "ERROR: Unknown ESP address: " << esp_addr << "\n";
+            }
+            return;  // Skip the rest if the control message is processed
+        }
+    }
+
+    // Handle distance messages if they don't match the control message format
+    size_t colon2 = msg.find(':');
+    if (colon2 == std::string::npos) return;
+
+    std::string id = msg.substr(0, colon2);
+    std::string val_str = msg.substr(colon2 + 1);
     try {
-      double val = std::stod(val_str);
-      example_interfaces::msg::Float64 out;
-      out.data = val;
-      if (id.find("0") != std::string::npos)
-        publisher_anc1_->publish(out);
-      else if (id.find("1") != std::string::npos)
-        publisher_anc2_->publish(out);
-      else if (id.find("2") != std::string::npos)
-        publisher_anc3_->publish(out);
-      else if (id.find("3") != std::string::npos)
-        publisher_anc4_->publish(out);
-      else if (id.find("4") != std::string::npos)
-        publisher_anc5_->publish(out);
+        double val = std::stod(val_str);
+        example_interfaces::msg::Float64 out;
+        out.data = val;
+
+        if (id.find("0") != std::string::npos)
+            publisher_anc1_->publish(out);
+        else if (id.find("1") != std::string::npos)
+            publisher_anc2_->publish(out);
+        else if (id.find("2") != std::string::npos)
+            publisher_anc3_->publish(out);
+        else if (id.find("3") != std::string::npos)
+            publisher_anc4_->publish(out);
+        else if (id.find("4") != std::string::npos)
+            publisher_anc5_->publish(out);
     } catch (...) {
-      RCLCPP_WARN(this->get_logger(), "Parse error on message: %s", msg.c_str());
+        RCLCPP_WARN(this->get_logger(), "Parse error on message: %s", msg.c_str());
+    }
+}
+
+
+  void send_command_to_esp(const std::string& target_esp, const std::string& cmd) {
+    sockaddr_in target_addr{};
+    target_addr.sin_family = AF_INET;
+    target_addr.sin_port = htons(PORT);
+    inet_pton(AF_INET, "192.168.0.100", &target_addr.sin_addr);  // Assume Jetson's IP
+
+    std::string payload = "ADDRESS-" + target_esp + ":" + cmd + "\n";  // ESP code expects '\n'
+    int rc = sendto(sockfd_, payload.c_str(), payload.size(), 0, 
+                    (struct sockaddr*)&target_addr, sizeof(target_addr));
+    if (rc < 0) {
+      RCLCPP_WARN(this->get_logger(), "sendto() failed for ESP %s", target_esp.c_str());
+    } else {
+      RCLCPP_INFO(this->get_logger(), "Sent to ESP %s: %s", target_esp.c_str(), payload.c_str());
     }
   }
 

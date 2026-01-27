@@ -16,7 +16,7 @@ STATIC_ANCHORS = {
 DYNAMIC_ANCHORS = {
 "anc1":["0.36","-0.435"],
 #"anc2":["0.36","0.435"]
-"anc2":["1.265","-0.52"]
+"anc2":["0.58","-1.2"]
 }
 
 DUAL_EKF_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb.yaml')
@@ -250,6 +250,18 @@ def generate_launch_description():
 		remappings=[('odometry/filtered', 'uwb/static_filtered')]
 	)
 	
+    navsat_tf_node = Node(
+		package='robot_localization',
+		executable='navsat_transform_node',
+		name='navsat_transform_node',
+		output='screen',
+		parameters=[DUAL_EKF_PARAMS],
+		remappings=[
+			('gps/fix', '/ublox_gps_node/fix'),
+			('odometry/filtered', 'uwb/static_filtered')
+		]
+	)
+	
     delayed_scout = TimerAction(
 		period=7.0,
 		actions=[scout_base_node]
@@ -271,6 +283,7 @@ def generate_launch_description():
         uwb_tf_node,
         ekf_filter_node_fused,
         ekf_filter_node_map,
+        navsat_tf_node,
         ekf_tf_node,
         #dynamic_tf_node,
         rplidar_ros_node,

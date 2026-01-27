@@ -68,7 +68,7 @@ class UWBTransform : public rclcpp::Node {
 						*sum_y += y;
 						(*count)++;
 						}
-				}
+				} 
 				if (*count == 0) {
 					dynamic_center_x = 0.0;
 					dynamic_center_y = 0.0;
@@ -133,7 +133,7 @@ class UWBTransform : public rclcpp::Node {
 			
 			// dynamic anchor_tf 
 			dynamic_anc_tf.header.stamp = this->get_clock()->now();
-			dynamic_anc_tf.header.frame_id = "map_uwb";
+			dynamic_anc_tf.header.frame_id = map_child_transform;
 			dynamic_anc_tf.child_frame_id = "dynamic_anc_link";
 			
 			dynamic_anc_tf.transform.translation.x = dynamic_center_x;
@@ -151,7 +151,7 @@ class UWBTransform : public rclcpp::Node {
 			// static transform representing map->odom substituting the global GNSS position in the absence of the latter.
 			static_anc_tf.header.stamp = this->get_clock()->now();
 			static_anc_tf.header.frame_id = "map";
-			static_anc_tf.child_frame_id = "map_uwb";
+			static_anc_tf.child_frame_id = map_child_transform;		// Change this to utm when 
 			
 			static_anc_tf.transform.translation.x = static_center_x;
 			static_anc_tf.transform.translation.y = -static_center_y;
@@ -200,6 +200,7 @@ class UWBTransform : public rclcpp::Node {
 		std::optional<int> sign;
 		std::optional<int> sign_prev;
 		bool has_prev = false;
+		std::string map_child_transform = "map_uwb";
 		
 		geometry_msgs::msg::TransformStamped dynamic_anc_tf, static_anc_tf;
 		
@@ -475,14 +476,14 @@ class UWBTransform : public rclcpp::Node {
 			
 			static_odom_msg.header.stamp = dynamic_odom_msg.header.stamp;
 			
-			dynamic_odom_msg1_4_3.header.frame_id = "map_uwb";
+			dynamic_odom_msg1_4_3.header.frame_id = map_child_transform;
 			dynamic_odom_msg1_4_3.child_frame_id  = "tag_link";
-			dynamic_odom_msg1_5_3.header.frame_id = "map_uwb";
+			dynamic_odom_msg1_5_3.header.frame_id = map_child_transform;
 			dynamic_odom_msg1_5_3.child_frame_id  = "tag_link";
-			dynamic_odom_msg4_5_3.header.frame_id = "map_uwb";
+			dynamic_odom_msg4_5_3.header.frame_id = map_child_transform;
 			dynamic_odom_msg1_4_3.child_frame_id  = "tag_link";
 			
-			static_odom_msg.header.frame_id = "map_uwb";
+			static_odom_msg.header.frame_id = map_child_transform;
 			static_odom_msg.child_frame_id  = "tag_link";
 			
 			// Translation
