@@ -79,6 +79,7 @@ private:
       std::string msg(buffer);
       //RCLCPP_INFO(this->get_logger(), "Received: %s", msg.c_str());
 	  
+	  //RCLCPP_INFO(this->get_logger(), "Received message: %s", msg.c_str());
 	  remember_esp_from_msg(msg, client_addr);
       parse_and_publish(msg);
 
@@ -112,34 +113,35 @@ private:
     size_t dash  = msg.find('-');
     size_t colon = msg.find(':');
     if (dash != std::string::npos && colon != std::string::npos && colon > dash + 1) {
-	  size_t end = msg.find('\r', colon + 1);
-	  if (end == std::string::npos) end = msg.find('\n', colon + 1);
-	  if (end == std::string::npos) end = msg.size();
+        size_t end = msg.find('\r', colon + 1);
+        if (end == std::string::npos) end = msg.find('\n', colon + 1);
+        if (end == std::string::npos) end = msg.size();
 
-	  esp_addr = msg.substr(dash + 1, colon - (dash + 1));
-	  esp_status = msg.substr(colon + 1, end - (colon + 1));
+        esp_addr = msg.substr(dash + 1, colon - (dash + 1));
+        esp_status = msg.substr(colon + 1, end - (colon + 1));
 
-	  // trim whitespace
-	  auto trim = [](std::string &s){
-		while (!s.empty() && (s.back()=='\r' || s.back()=='\n' || s.back()==' ' || s.back()=='\t')) s.pop_back();
-		while (!s.empty() && (s.front()==' ' || s.front()=='\t')) s.erase(s.begin());
-	  };
-	  trim(esp_addr);
-	  trim(esp_status);
+        // Trim any unwanted whitespace or newline characters
+        auto trim = [](std::string &s){
+            while (!s.empty() && (s.back() == '\r' || s.back() == '\n' || s.back() == ' ' || s.back() == '\t')) s.pop_back();
+            while (!s.empty() && (s.front() == ' ' || s.front() == '\t')) s.erase(s.begin());
+        };
+        trim(esp_addr);
+        trim(esp_status);
 
-	  RCLCPP_INFO(this->get_logger(), "Parsed: ESP_ADDR=%s, ESP_STATUS=%s", esp_addr.c_str(), esp_status.c_str());
+        RCLCPP_INFO(this->get_logger(), "Parsed: ESP_ADDR=%s, ESP_STATUS=%s", esp_addr.c_str(), esp_status.c_str());
 
-	  if (esp_status == "FINISHED") {
-		if (esp_addr == "10") send_command_to_esp("20", "START");
-		else if (esp_addr == "20") send_command_to_esp("10", "START");
-		else RCLCPP_WARN(this->get_logger(), "Unknown ESP address: %s", esp_addr.c_str());
-		return;
-	  }
+        if (esp_status == "FINISHED") {
+            if (esp_addr == "10") send_command_to_esp("20", "START");
+            else if (esp_addr == "20") send_command_to_esp("10", "START");
+            else RCLCPP_WARN(this->get_logger(), "Unknown ESP address: %s", esp_addr.c_str());
+            return;
+        }
 
-	  if (esp_status == "START" || esp_status == "STOP" || esp_status == "HELLO") {
-		return;
-	  }
-	}
+        // Handle other statuses
+        if (esp_status == "START" || esp_status == "STOP" || esp_status == "HELLO") {
+            return;  // Skip distance processing for these control messages
+        }
+    }
 
     // Handle distance messages if they don't match the control message format
     size_t colon2 = msg.find(':');
