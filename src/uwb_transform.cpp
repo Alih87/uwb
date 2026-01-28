@@ -35,12 +35,16 @@ class UWBTransform : public rclcpp::Node {
 			this->declare_parameter<std::string>("anc2");
 			this->declare_parameter<std::string>("anc3");
 			this->declare_parameter<std::string>("anc4");
+			this->declare_parameter<std::string>("tag_frame");
+			this->declare_parameter<std::string>("aux_frame");
 			
 			std::string anc0_loc = this->get_parameter("anc0").as_string();
 			std::string anc1_loc = this->get_parameter("anc1").as_string();
 			std::string anc2_loc = this->get_parameter("anc2").as_string();
 			std::string anc3_loc = this->get_parameter("anc3").as_string();
 			std::string anc4_loc = this->get_parameter("anc4").as_string();
+			tag_frame = this->get_parameter("tag_frame").as_string();
+			map_child_transform = this->get_parameter("aux_frame").as_string();
 			
 			std::tie(x1, y1) = parse_parameter(anc0_loc);
 			std::tie(x2, y2) = parse_parameter(anc1_loc);
@@ -110,24 +114,24 @@ class UWBTransform : public rclcpp::Node {
 			
 			// Initialize subscriptions
 			subscription_anc1 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc0", qos_anc,
+							"uwb/"+tag_frame+"/d_anc0", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(1, msg);});
 			subscription_anc2 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc1", qos_anc,
+							"uwb/"+tag_frame+"/d_anc1", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(2, msg);});
 			subscription_anc3 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc2", qos_anc,
+							"uwb/"+tag_frame+"/d_anc2", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(3, msg);});
 			subscription_anc4 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc3", qos_anc,
+							"uwb/"+tag_frame+"/d_anc3", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(4, msg);});
 			subscription_anc5 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/d_anc4", qos_anc,
+							"uwb/"+tag_frame+"/d_anc4", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(5, msg);});
-			publisher_dynamic1_4_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dyn_odom1_4_3", qos_odom);
-			publisher_dynamic1_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dyn_odom1_5_3", qos_odom);
-			publisher_dynamic4_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/dyn_odom4_5_3", qos_odom);
-			publisher_static = this->create_publisher<nav_msgs::msg::Odometry>("uwb/static_odom", qos_odom);
+			publisher_dynamic1_4_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"/dyn_odom1_4_3", qos_odom);
+			publisher_dynamic1_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"/dyn_odom1_5_3", qos_odom);
+			publisher_dynamic4_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"/dyn_odom4_5_3", qos_odom);
+			publisher_static = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"/static_odom", qos_odom);
 			timer_ = this->create_wall_timer(50ms, std::bind(&UWBTransform::timer_callback, this));
 			delta_timer_ = this->create_wall_timer(33.33ms, std::bind(&UWBTransform::time_delta, this));
 			
@@ -201,6 +205,7 @@ class UWBTransform : public rclcpp::Node {
 		std::optional<int> sign_prev;
 		bool has_prev = false;
 		std::string map_child_transform = "map_uwb";
+		std::string tag_frame = "tag_link";
 		
 		geometry_msgs::msg::TransformStamped dynamic_anc_tf, static_anc_tf;
 		
@@ -477,14 +482,14 @@ class UWBTransform : public rclcpp::Node {
 			static_odom_msg.header.stamp = dynamic_odom_msg.header.stamp;
 			
 			dynamic_odom_msg1_4_3.header.frame_id = map_child_transform;
-			dynamic_odom_msg1_4_3.child_frame_id  = "tag_link";
+			dynamic_odom_msg1_4_3.child_frame_id  = tag_frame;
 			dynamic_odom_msg1_5_3.header.frame_id = map_child_transform;
-			dynamic_odom_msg1_5_3.child_frame_id  = "tag_link";
+			dynamic_odom_msg1_5_3.child_frame_id  = tag_frame;
 			dynamic_odom_msg4_5_3.header.frame_id = map_child_transform;
-			dynamic_odom_msg1_4_3.child_frame_id  = "tag_link";
+			dynamic_odom_msg1_4_3.child_frame_id  = tag_frame;
 			
 			static_odom_msg.header.frame_id = map_child_transform;
-			static_odom_msg.child_frame_id  = "tag_link";
+			static_odom_msg.child_frame_id  = tag_frame;
 			
 			// Translation
 			dynamic_odom_msg1_4_3.pose.pose.position.x = x_dynamic1_4_3;

@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -19,7 +19,14 @@ DYNAMIC_ANCHORS = {
 "anc2":["0.58","-1.2"]
 }
 
+tag_1 = "tag1"
+tag_2 = "tag2"
+
+aux_frame = "map_uwb"
+
 DUAL_EKF_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb.yaml')
+DUAL_EKF_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb_tag1.yaml')
+DUAL_EKF_PARAMS_TAG2 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb_tag2.yaml')
 
 def generate_launch_description():
     # --- Launch configurations ---
@@ -71,18 +78,6 @@ def generate_launch_description():
 													   description='Whether running with simulator'),
 		DeclareLaunchArgument('control_rate', default_value='30',
 													 description='Simulation control loop update rate'),
-													 
-	# UWB Anchor locations
-		DeclareLaunchArgument('anc0', default_value=STATIC_ANCHORS['anc0'][0]+","+STATIC_ANCHORS['anc0'][1],
-													 description='Anchor 1 location (x,y)'),
-		DeclareLaunchArgument('anc1', default_value=DYNAMIC_ANCHORS['anc1'][0]+","+DYNAMIC_ANCHORS['anc1'][1],
-													 description='Anchor 2 location (x,y)'),
-		DeclareLaunchArgument('anc2', default_value=DYNAMIC_ANCHORS['anc2'][0]+","+DYNAMIC_ANCHORS['anc2'][1],
-													 description='Anchor 3 location (x,y)'),
-		DeclareLaunchArgument('anc3', default_value=STATIC_ANCHORS['anc3'][0]+","+STATIC_ANCHORS['anc3'][1],
-													 description='Anchor 4 location (x,y)'),
-		DeclareLaunchArgument('anc4', default_value=STATIC_ANCHORS['anc4'][0]+","+STATIC_ANCHORS['anc4'][1],
-													 description='Anchor 5 location (x,y)'),
     ]
 
     # --- RViz config file ---
@@ -119,27 +114,10 @@ def generate_launch_description():
         package='uwb_test',
         executable='uwb_rcv',
         name='uwb_rcv',
-        output='screen'
-    )
-    
-    uwb_tf_node = Node(
-        package='uwb_test',
-        executable='uwb_tf',
-        name='uwb_tf',
         parameters=[{
-			'anc0': LaunchConfiguration('anc0'),
-			'anc1': LaunchConfiguration('anc1'),
-			'anc2': LaunchConfiguration('anc2'),
-			'anc3': LaunchConfiguration('anc3'),
-			'anc4': LaunchConfiguration('anc4'),
+			'tag1': tag_1,
+			'tag2': tag_2
         }],
-        output='screen'
-    )
-    
-    ekf_tf_node = Node(
-        package='uwb_test',
-        executable='ekf_tf',
-        name='ekf_tf',
         output='screen'
     )
     
@@ -196,21 +174,21 @@ def generate_launch_description():
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_uwb_0",
-		arguments=[STATIC_ANCHORS['anc0'][0],STATIC_ANCHORS['anc0'][1],'0.0','0.0','0.0','0.0','map_uwb','static_uwb_0']
+		arguments=[STATIC_ANCHORS['anc0'][0],STATIC_ANCHORS['anc0'][1],'0.0','0.0','0.0','0.0',aux_frame,'static_uwb_0']
 	)
 	
     static_uwb_3 = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_uwb_3",
-		arguments=[STATIC_ANCHORS['anc3'][0],STATIC_ANCHORS['anc3'][1],'0.0','0.0','0.0','0.0','map_uwb','static_uwb_3']
+		arguments=[STATIC_ANCHORS['anc3'][0],STATIC_ANCHORS['anc3'][1],'0.0','0.0','0.0','0.0',aux_frame,'static_uwb_3']
 	)
      
     static_uwb_4 = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_uwb_4",
-		arguments=[STATIC_ANCHORS['anc4'][0],STATIC_ANCHORS['anc4'][1],'0.0','0.0','0.0','0.0','map_uwb','static_uwb_4']
+		arguments=[STATIC_ANCHORS['anc4'][0],STATIC_ANCHORS['anc4'][1],'0.0','0.0','0.0','0.0',aux_frame,'static_uwb_4']
 	)
 	
     static_base_imu = Node(
@@ -234,33 +212,33 @@ def generate_launch_description():
 		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','base_link','gps']
 	)
 	
-    ekf_filter_node_fused = Node(
-		package="robot_localization",
-		executable="ekf_node",
-		name="ekf_filter_node_fused",
-		parameters=[{"ekf_filter_node_fused": ""}, DUAL_EKF_PARAMS],
-		remappings=[('odometry/filtered', 'uwb/dyn_fused')]
-	)
-	
-    ekf_filter_node_map = Node(
-		package="robot_localization",
-		executable="ekf_node",
-		name="ekf_filter_node_map",
-		parameters=[{"ekf_filter_node_map": ""}, DUAL_EKF_PARAMS],
-		remappings=[('odometry/filtered', 'uwb/static_filtered')]
-	)
-	
-    navsat_tf_node = Node(
-		package='robot_localization',
-		executable='navsat_transform_node',
-		name='navsat_transform_node',
-		output='screen',
-		parameters=[DUAL_EKF_PARAMS],
-		remappings=[
-			('gps/fix', '/ublox_gps_node/fix'),
-			('odometry/filtered', 'uwb/static_filtered')
-		]
-	)
+    tag1_ekf_launch = IncludeLaunchDescription(
+            launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'tag_ekf.launch.py'),
+            launch_arguments={
+                'anc0': STATIC_ANCHORS['anc0'][0]+","+STATIC_ANCHORS['anc0'][1],
+                'anc1': DYNAMIC_ANCHORS['anc1'][0]+","+DYNAMIC_ANCHORS['anc1'][1],
+                'anc2': DYNAMIC_ANCHORS['anc2'][0]+","+DYNAMIC_ANCHORS['anc2'][1],
+                'anc3': STATIC_ANCHORS['anc3'][0]+","+STATIC_ANCHORS['anc3'][1],
+                'anc4': STATIC_ANCHORS['anc4'][0]+","+STATIC_ANCHORS['anc4'][1],
+                'tag_frame': tag_1,
+                'aux_frame': aux_frame,
+                'ekf_params': DUAL_EKF_PARAMS_TAG1
+            }.items()
+        )
+        
+    tag2_ekf_launch = IncludeLaunchDescription(
+            launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'tag_ekf.launch.py'),
+            launch_arguments={
+                'anc0': STATIC_ANCHORS['anc0'][0]+","+STATIC_ANCHORS['anc0'][1],
+                'anc1': DYNAMIC_ANCHORS['anc1'][0]+","+DYNAMIC_ANCHORS['anc1'][1],
+                'anc2': DYNAMIC_ANCHORS['anc2'][0]+","+DYNAMIC_ANCHORS['anc2'][1],
+                'anc3': STATIC_ANCHORS['anc3'][0]+","+STATIC_ANCHORS['anc3'][1],
+                'anc4': STATIC_ANCHORS['anc4'][0]+","+STATIC_ANCHORS['anc4'][1],
+                'tag_frame': tag_2,
+                'aux_frame': aux_frame,
+                'ekf_params': DUAL_EKF_PARAMS_TAG2
+            }.items()
+        )
 	
     delayed_scout = TimerAction(
 		period=7.0,
@@ -280,12 +258,8 @@ def generate_launch_description():
         ublox_gps_node,
         umx_driver_node,
         uwb_rcv_node,
-        uwb_tf_node,
-        ekf_filter_node_fused,
-        ekf_filter_node_map,
-        navsat_tf_node,
-        ekf_tf_node,
-        #dynamic_tf_node,
+        tag1_ekf_launch,
+        tag2_ekf_launch,
         rplidar_ros_node,
         rviz2_lidar_node
     ])

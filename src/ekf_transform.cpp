@@ -18,6 +18,9 @@ class EKFTransform : public rclcpp::Node {
 public:
     EKFTransform() : Node("ekf_transform")
     {
+		this->declare_parameter<std::string>("tag_frame");
+		tag_frame = this->get_parameter("tag_frame").as_string();
+		
 		qos_odom.best_effort();
 		qos_odom.durability_volatile();
 		
@@ -25,30 +28,30 @@ public:
 		qos_metric.durability_volatile();
 		
         uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/static_odom", qos_odom,
+            "uwb/"+tag_frame+"/static_odom", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->static_callback(msg); });
             
         uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/dyn_fused", qos_odom,
+            "uwb/"+tag_frame+"/dyn_fused", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback(msg); });
             
         uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/dyn_odom1_4_3", qos_odom,
+            "uwb/"+tag_frame+"/dyn_odom1_4_3", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback1_4_3(msg); });
             
         uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/dyn_odom1_5_3", qos_odom,
+            "uwb/"+tag_frame+"/dyn_odom1_5_3", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback1_5_3(msg); });
             
         uwb_dynamic_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/dyn_odom4_5_3", qos_odom,
+            "uwb/"+tag_frame+"/dyn_odom4_5_3", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->dynamic_callback4_5_3(msg); });
 
         uwb_static_sub = this->create_subscription<nav_msgs::msg::Odometry>(
-            "uwb/static_filtered", qos_odom,
+            "uwb/"+tag_frame+"/static_filtered", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->static_filtered_callback(msg); });
             
-        logs_pub_ = this->create_publisher<example_interfaces::msg::Float64MultiArray>("/ekf/metrics", 2);
+        logs_pub_ = this->create_publisher<example_interfaces::msg::Float64MultiArray>("/ekf/"+tag_frame+"/metrics", 2);
 		logs.data.resize(24, 0.0);
 
 
@@ -85,6 +88,7 @@ private:
 	geometry_msgs::msg::Quaternion yaw_dyn_prev, yaw_stat_prev, yaw_dyn1_4_3_prev, yaw_dyn1_5_3_prev, yaw_dyn4_5_3_prev, yaw_stat_filtered_prev, yaw_tf_prev, yaw_dyn_tf_prev;
 	rclcpp::Time t_prev = this->get_clock()->now();
 	double delta_t = 0.;
+	std::string tag_frame = "tag_link";
 
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     std::mutex mtx_;

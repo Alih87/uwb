@@ -25,12 +25,23 @@ public:
   {
     qos_anc.best_effort();
     qos_anc.durability_volatile();
+    
+    this->declare_parameter<std::string>("tag1");
+    this->declare_parameter<std::string>("tag2");
+	tag1_frame = this->get_parameter("tag1").as_string();
+	tag2_frame = this->get_parameter("tag2").as_string();
 
-    publisher_anc1_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc0", qos_anc);
-    publisher_anc2_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc1", qos_anc);
-    publisher_anc3_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc2", qos_anc);
-    publisher_anc4_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc3", qos_anc);
-    publisher_anc5_ = this->create_publisher<example_interfaces::msg::Float64>("uwb/d_anc4", qos_anc);
+    publisher_anc1_t1 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag1_frame+"/d_anc0", qos_anc);
+    publisher_anc2_t1 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag1_frame+"/d_anc1", qos_anc);
+    publisher_anc3_t1 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag1_frame+"/d_anc2", qos_anc);
+    publisher_anc4_t1 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag1_frame+"/d_anc3", qos_anc);
+    publisher_anc5_t1 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag1_frame+"/d_anc4", qos_anc);
+    
+    publisher_anc1_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc0", qos_anc);
+    publisher_anc2_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc1", qos_anc);
+    publisher_anc3_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc2", qos_anc);
+    publisher_anc4_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc3", qos_anc);
+    publisher_anc5_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc4", qos_anc);
 
     // --- Create UDP socket ---
     sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -105,8 +116,8 @@ private:
 	  if (end == std::string::npos) end = msg.find('\n', colon + 1);
 	  if (end == std::string::npos) end = msg.size();
 
-	  std::string esp_addr   = msg.substr(dash + 1, colon - (dash + 1));
-	  std::string esp_status = msg.substr(colon + 1, end - (colon + 1));
+	  esp_addr = msg.substr(dash + 1, colon - (dash + 1));
+	  esp_status = msg.substr(colon + 1, end - (colon + 1));
 
 	  // trim whitespace
 	  auto trim = [](std::string &s){
@@ -141,17 +152,32 @@ private:
         double val = std::stod(val_str);
         example_interfaces::msg::Float64 out;
         out.data = val;
-
-        if (id.find("0") != std::string::npos)
-            publisher_anc1_->publish(out);
-        else if (id.find("1") != std::string::npos)
-            publisher_anc2_->publish(out);
-        else if (id.find("2") != std::string::npos)
-            publisher_anc3_->publish(out);
-        else if (id.find("3") != std::string::npos)
-            publisher_anc4_->publish(out);
-        else if (id.find("4") != std::string::npos)
-            publisher_anc5_->publish(out);
+        
+        if (esp_addr == "10" && esp_status == "START") {
+			if (id.find("0") != std::string::npos)
+            publisher_anc1_t1->publish(out);
+			else if (id.find("1") != std::string::npos)
+				publisher_anc2_t1->publish(out);
+			else if (id.find("2") != std::string::npos)
+				publisher_anc3_t1->publish(out);
+			else if (id.find("3") != std::string::npos)
+				publisher_anc4_t1->publish(out);
+			else if (id.find("4") != std::string::npos)
+				publisher_anc5_t1->publish(out);
+		} else if (esp_addr == "20" && esp_status == "START") {
+			if (id.find("0") != std::string::npos)
+            publisher_anc1_t2->publish(out);
+			else if (id.find("1") != std::string::npos)
+				publisher_anc2_t2->publish(out);
+			else if (id.find("2") != std::string::npos)
+				publisher_anc3_t2->publish(out);
+			else if (id.find("3") != std::string::npos)
+				publisher_anc4_t2->publish(out);
+			else if (id.find("4") != std::string::npos)
+				publisher_anc5_t2->publish(out);
+		} else {
+			
+		}
     } catch (...) {
         RCLCPP_WARN(this->get_logger(), "Parse error on message: %s", msg.c_str());
     }
@@ -198,11 +224,20 @@ private:
   int sockfd_;
   rclcpp::QoS qos_anc{rclcpp::KeepLast(3)};
   rclcpp::TimerBase::SharedPtr timer_;
-  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc1_;
-  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc2_;
-  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc3_;
-  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc4_;
-  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc5_;
+  
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc1_t1;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc2_t1;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc3_t1;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc4_t1;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc5_t1;
+  
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc1_t2;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc2_t2;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc3_t2;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc4_t2;
+  rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc5_t2;
+  
+  std::string tag1_frame, tag2_frame, esp_addr, esp_status;
 };
 
 int main(int argc, char *argv[])
