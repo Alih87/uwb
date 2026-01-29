@@ -16,7 +16,7 @@ ekf_filter_node_fused:
     base_link_frame: tag1
     world_frame: map
 
-    odom0: uwb/tag1/dyn_odom1_4_3
+    odom0: /uwb/tag1/dyn_odom1_4_3
     odom0_config: [true,  true,  false,
                   false, false, false,
                   false, false, false,
@@ -27,7 +27,7 @@ ekf_filter_node_fused:
     odom0_differential: false
     odom0_relative: false
     
-    odom1: uwb/tag1/dyn_odom1_5_3
+    odom1: /uwb/tag1/dyn_odom1_5_3
     odom1_config: [true,  true,  false,
                   false, false, false,
                   false, false, false,
@@ -38,7 +38,7 @@ ekf_filter_node_fused:
     odom1_differential: false
     odom1_relative: false
     
-    odom2: uwb/tag1/dyn_odom4_5_3
+    odom2: /uwb/tag1/dyn_odom4_5_3
     odom2_config: [true,  true,  false,
                   false, false, false,
                   false, false, false,
@@ -113,7 +113,7 @@ ekf_filter_node_map:
     base_link_frame: tag1
     world_frame: map
 
-    odom0: uwb/tag1/static_odom
+    odom0: /uwb/tag1/static_odom
     odom0_config: [true, true, false,
                   false, false, false,
                   false, false,  false,
@@ -124,7 +124,7 @@ ekf_filter_node_map:
     odom0_differential: false
     odom0_relative: false
 
-    odom1: uwb/tag1/dyn_fused
+    odom1: /uwb/tag1/dyn_fused
     odom1_config: [true,  true,  false,
                   false, false, false,
                   false, false, false,

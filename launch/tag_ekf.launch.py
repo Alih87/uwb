@@ -19,7 +19,7 @@ def generate_launch_description():
     uwb_tf_node = Node(
         package='uwb_test',
         executable='uwb_tf',
-        name='uwb_tf',
+        name=PythonExpression(['"uwb_tf_" + "', LaunchConfiguration('tag_frame'), '"']),
         parameters=[{
 			'anc0': LaunchConfiguration('anc0'),
 			'anc1': LaunchConfiguration('anc1'),
@@ -35,7 +35,7 @@ def generate_launch_description():
     ekf_tf_node = Node(
         package='uwb_test',
         executable='ekf_tf',
-        name='ekf_tf',
+        name=PythonExpression(['"ekf_tf_" + "', LaunchConfiguration('tag_frame'), '"']),
         parameters=[{
         'tag_frame': LaunchConfiguration('tag_frame')
         }],
@@ -45,7 +45,7 @@ def generate_launch_description():
     ekf_filter_node_fused = Node(
 		package="robot_localization",
 		executable="ekf_node",
-		name="ekf_filter_node_fused",
+		name=PythonExpression(['"ekf_filter_node_fused_" + "', LaunchConfiguration('tag_frame'), '"']),
 		parameters=[{"ekf_filter_node_fused": ""}, LaunchConfiguration('ekf_params')],
 		remappings=[('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/dyn_fused"']))]
 	)
@@ -53,7 +53,7 @@ def generate_launch_description():
     ekf_filter_node_map = Node(
 		package="robot_localization",
 		executable="ekf_node",
-		name="ekf_filter_node_map",
+		name=PythonExpression(['"ekf_filter_node_map_" + "', LaunchConfiguration('tag_frame'), '"']),
 		parameters=[{"ekf_filter_node_map": ""}, LaunchConfiguration('ekf_params')],
 		remappings=[('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/static_filtered"']))]
 	)
@@ -62,7 +62,7 @@ def generate_launch_description():
     navsat_tf_node = Node(
 		package='robot_localization',
 		executable='navsat_transform_node',
-		name='navsat_transform_node',
+		name=PythonExpression(['"navsat_transform_node_" + "', LaunchConfiguration('tag_frame'), '"']),
 		output='screen',
 		parameters=[LaunchConfiguration('ekf_params')],
 		remappings=[

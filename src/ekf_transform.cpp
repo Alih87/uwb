@@ -16,7 +16,7 @@ using namespace std::chrono_literals;
 
 class EKFTransform : public rclcpp::Node {
 public:
-    EKFTransform() : Node("ekf_transform")
+    EKFTransform() : Node("ekf_transform"+tag_frame)
     {
 		this->declare_parameter<std::string>("tag_frame");
 		tag_frame = this->get_parameter("tag_frame").as_string();

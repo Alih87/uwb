@@ -26,7 +26,7 @@ using namespace std::chrono_literals;
 
 class UWBTransform : public rclcpp::Node {
 	public:
-		UWBTransform() : Node("uwb_transform"),
+		UWBTransform() : Node("uwb_transform_"+tag_frame),
 						buffer_(this->get_clock()),
 						listener_(buffer_) {
 			// Initialize declared parameters in launch file
