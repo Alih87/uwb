@@ -46,7 +46,7 @@ def generate_launch_description():
 		package="robot_localization",
 		executable="ekf_node",
 		name=PythonExpression(['"ekf_filter_node_fused_" + "', LaunchConfiguration('tag_frame'), '"']),
-		parameters=[{"ekf_filter_node_fused": ""}, LaunchConfiguration('ekf_params')],
+		parameters=[{PythonExpression(['"ekf_filter_node_fused_" + "', LaunchConfiguration('tag_frame'), '"']): ""}, LaunchConfiguration('ekf_params')],
 		remappings=[('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/dyn_fused"']))]
 	)
 	
@@ -54,22 +54,22 @@ def generate_launch_description():
 		package="robot_localization",
 		executable="ekf_node",
 		name=PythonExpression(['"ekf_filter_node_map_" + "', LaunchConfiguration('tag_frame'), '"']),
-		parameters=[{"ekf_filter_node_map": ""}, LaunchConfiguration('ekf_params')],
+		parameters=[{PythonExpression(['"ekf_filter_node_map_" + "', LaunchConfiguration('tag_frame'), '"']): ""}, LaunchConfiguration('ekf_params')],
 		remappings=[('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/static_filtered"']))]
 	)
 	
 	## Convert the filtered tag position to global GNSS position in UTM coordinates
-    navsat_tf_node = Node(
-		package='robot_localization',
-		executable='navsat_transform_node',
-		name=PythonExpression(['"navsat_transform_node_" + "', LaunchConfiguration('tag_frame'), '"']),
-		output='screen',
-		parameters=[LaunchConfiguration('ekf_params')],
-		remappings=[
-			('gps/fix', '/ublox_gps_node/fix'),		# this needs to be tag location not base_link location
-			('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/static_filtered"']))
-		]
-	)
+    #navsat_tf_node = Node(
+	#	package='robot_localization',
+	#	executable='navsat_transform_node',
+	#	name=PythonExpression(['"navsat_transform_node_" + "', LaunchConfiguration('tag_frame'), '"']),
+	#	output='screen',
+	#	parameters=[LaunchConfiguration('ekf_params')],
+	#	remappings=[
+	#		('gps/fix', '/ublox_gps_node/fix'),		# this needs to be tag location not base_link location
+	#		('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/static_filtered"']))
+	#	]
+	#)
     
     return LaunchDescription(declare_args + [
     uwb_tf_node,

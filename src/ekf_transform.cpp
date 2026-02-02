@@ -88,7 +88,7 @@ private:
 	geometry_msgs::msg::Quaternion yaw_dyn_prev, yaw_stat_prev, yaw_dyn1_4_3_prev, yaw_dyn1_5_3_prev, yaw_dyn4_5_3_prev, yaw_stat_filtered_prev, yaw_tf_prev, yaw_dyn_tf_prev;
 	rclcpp::Time t_prev = this->get_clock()->now();
 	double delta_t = 0.;
-	std::string tag_frame = "tag_link";
+	std::string tag_frame;
 
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     std::mutex mtx_;

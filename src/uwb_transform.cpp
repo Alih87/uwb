@@ -155,7 +155,7 @@ class UWBTransform : public rclcpp::Node {
 			// static transform representing map->odom substituting the global GNSS position in the absence of the latter.
 			static_anc_tf.header.stamp = this->get_clock()->now();
 			static_anc_tf.header.frame_id = "map";
-			static_anc_tf.child_frame_id = map_child_transform;		// Change this to utm when 
+			static_anc_tf.child_frame_id = map_child_transform;		// Change this to utm when using navsat transform
 			
 			static_anc_tf.transform.translation.x = static_center_x;
 			static_anc_tf.transform.translation.y = -static_center_y;
@@ -204,8 +204,8 @@ class UWBTransform : public rclcpp::Node {
 		std::optional<int> sign;
 		std::optional<int> sign_prev;
 		bool has_prev = false;
-		std::string map_child_transform = "map_uwb";
-		std::string tag_frame = "tag_link";
+		std::string map_child_transform;
+		std::string tag_frame;
 		
 		geometry_msgs::msg::TransformStamped dynamic_anc_tf, static_anc_tf;
 		
