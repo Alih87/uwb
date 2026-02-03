@@ -22,7 +22,7 @@ ekf_filter_node_fused_tag2:
                   false, false, false,
                   false, false, false,
                   false, false, false]
-    odom0_queue_size: 10
+    odom0_queue_size: 2
     odom0_nodelay: true
     odom0_differential: false
     odom0_relative: false
@@ -33,7 +33,7 @@ ekf_filter_node_fused_tag2:
                   false, false, false,
                   false, false, false,
                   false, false, false]
-    odom1_queue_size: 10
+    odom1_queue_size: 2
     odom1_nodelay: true
     odom1_differential: false
     odom1_relative: false
@@ -44,7 +44,7 @@ ekf_filter_node_fused_tag2:
                   false, false, false,
                   false, false, false,
                   false, false, false]
-    odom2_queue_size: 10
+    odom2_queue_size: 2
     odom2_nodelay: true
     odom2_differential: false
     odom2_relative: false
@@ -119,7 +119,7 @@ ekf_filter_node_map_tag2:
                   false, false,  false,
                   false, false, false,
                   false, false, false]
-    odom0_queue_size: 10
+    odom0_queue_size: 2
     odom0_nodelay: true
     odom0_differential: false
     odom0_relative: false
@@ -130,7 +130,7 @@ ekf_filter_node_map_tag2:
                   false, false, false,
                   false, false, false,
                   false, false, false]
-    odom1_queue_size: 10
+    odom1_queue_size: 2
     odom1_nodelay: true
     odom1_differential: false
     odom1_relative: false
