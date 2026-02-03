@@ -2,8 +2,9 @@
 #include <WiFi.h>
 #include <WiFiUdp.h>
 
-#define DISTANCES_PER_ANCHOR_PER_CYCLE 3
+#define DISTANCES_PER_ANCHOR_PER_CYCLE 6
 #define NUMBER_OF_ANCHORS 4
+#define DELAY_TIME_MS 28
 
 HardwareSerial MySerial(2);
 const char* ssid = "iptime11";
@@ -16,7 +17,7 @@ String line = "";
 const int esp_listen_port = 5006;
 
 unsigned char count_sent_fixes = 0;
-String TAG_ADDRESS = "10";
+String TAG_ADDRESS = "20";
 
 WiFiUDP udp;
 
@@ -60,7 +61,7 @@ void setup() {
 
   unsigned long start_time = millis();
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+    delay(100);
     Serial.print(".");
     if (millis() - start_time > 10000) {
       Serial.println("\nWiFi connection failed!");
@@ -85,7 +86,7 @@ void setup() {
   delay(5000);
   udp.begin(esp_listen_port);
 
-  delay(10);
+  delay(DELAY_TIME_MS);
 
   udp.beginPacket(jetson_ip, jetson_port);
   line = "ADDRESS-" + TAG_ADDRESS + ":HELLO\r\n";
@@ -116,9 +117,9 @@ void loop() {
   if (count_sent_fixes >= DISTANCES_PER_ANCHOR_PER_CYCLE * NUMBER_OF_ANCHORS) {
     count_sent_fixes = 0;
     talk("AT+switchdis=0\r\n");
-    delay(500);
+    delay(DELAY_TIME_MS);
     talk("AT+RST\r\n");
-    delay(1000);
+    delay(DELAY_TIME_MS);
     line = "ADDRESS-" + TAG_ADDRESS + ":FINISHED\r\n";
     udp.beginPacket(jetson_ip, jetson_port);
     udp.write((const uint8_t*)line.c_str(), line.length());
@@ -138,17 +139,17 @@ void loop() {
           String jetson_cmd = parseCmd(line);
           if (jetson_cmd.startsWith("ST") && TAG_ADDRESS.equals(jetson_cmd.substring(jetson_cmd.length() - 2))) {
             talk("AT+anchor_tag=0," + TAG_ADDRESS + "\r\n");
-            delay(500);
+            delay(DELAY_TIME_MS);
             talk("AT+RST\r\n");
-            delay(1000);
+            delay(DELAY_TIME_MS);
             talk("AT+switchdis=1\r\n");
-            delay(500);
+            delay(DELAY_TIME_MS);
             break;
           } else if (jetson_cmd.startsWith("SP") && TAG_ADDRESS.equals(jetson_cmd.substring(jetson_cmd.length() - 2))) {
             talk("AT+switchdis=0\r\n");
-            delay(500);
+            delay(DELAY_TIME_MS);
             talk("AT+RST\r\n");
-            delay(1000);
+            delay(DELAY_TIME_MS);
             break;
           } else {
             Serial.println("ERROR: Wrong command or address\r");

@@ -10,13 +10,13 @@ from launch.actions import TimerAction
 STATIC_ANCHORS = {
 "anc0":["0.0","-3.18"],
 "anc3":["0.0","0.0"],
-"anc4":["1.65","0.22"]
+"anc4":["1.595","0.175"]
 }
 
 DYNAMIC_ANCHORS = {
-"anc1":["0.36","-0.435"],
+"anc1":["0.495","-0.6"],
 #"anc2":["0.36","0.435"]
-"anc2":["0.58","-1.2"]
+"anc2":["1.08","-0.6"]
 }
 
 tag_1 = "tag1"
