@@ -47,7 +47,8 @@ def generate_launch_description():
 		executable="ekf_node",
 		name=PythonExpression(['"ekf_filter_node_fused_" + "', LaunchConfiguration('tag_frame'), '"']),
 		parameters=[{PythonExpression(['"ekf_filter_node_fused_" + "', LaunchConfiguration('tag_frame'), '"']): ""}, LaunchConfiguration('ekf_params')],
-		remappings=[('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/dyn_fused"']))]
+		remappings=[('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/dyn_fused"'])),
+					('/accel/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/accel_fused"']))]
 	)
 	
     ekf_filter_node_map = Node(
@@ -55,7 +56,8 @@ def generate_launch_description():
 		executable="ekf_node",
 		name=PythonExpression(['"ekf_filter_node_map_" + "', LaunchConfiguration('tag_frame'), '"']),
 		parameters=[{PythonExpression(['"ekf_filter_node_map_" + "', LaunchConfiguration('tag_frame'), '"']): ""}, LaunchConfiguration('ekf_params')],
-		remappings=[('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/static_filtered"']))]
+		remappings=[('odometry/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/static_filtered"'])),
+					('/accel/filtered', PythonExpression(['"uwb/" + "', LaunchConfiguration('tag_frame'), '" + "/accel_filtered"']))]
 	)
 	
 	## Convert the filtered tag position to global GNSS position in UTM coordinates

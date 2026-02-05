@@ -255,11 +255,11 @@ def generate_launch_description():
         static_base_imu,
         static_base_lidar,
         static_base_gnss,
-        ublox_gps_node,
-        umx_driver_node,
+        #ublox_gps_node,
+        #umx_driver_node,
         uwb_rcv_node,
         tag1_ekf_launch,
         tag2_ekf_launch,
-        rplidar_ros_node,
+        #rplidar_ros_node,
         rviz2_lidar_node
     ])
