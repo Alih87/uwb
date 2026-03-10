@@ -1,5 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <example_interfaces/msg/float64.hpp>
+#include <sensor_msgs/msg/imu.hpp>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
@@ -13,7 +15,7 @@
 using namespace std::chrono_literals;
 
 #define PORT 5005
-#define BUF_SIZE 1024
+#define BUF_SIZE 512
 
 std::unordered_map<std::string, sockaddr_in> esp_clients_;
 static constexpr int ESP_CMD_PORT = 5006;
@@ -42,6 +44,9 @@ public:
     publisher_anc3_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc2", qos_anc);
     publisher_anc4_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc3", qos_anc);
     publisher_anc5_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc4", qos_anc);
+    
+    tag1_imu = this->create_publisher<sensor_msgs::msg::Imu>("uwb/"+tag1_frame+"/imu", qos_anc);
+    tag2_imu = this->create_publisher<sensor_msgs::msg::Imu>("uwb/"+tag2_frame+"/imu", qos_anc);
 
     // --- Create UDP socket ---
     sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -59,29 +64,45 @@ public:
 
     // Run the callback fast enough to drain UDP buffer
     timer_ = this->create_wall_timer(1ms, std::bind(&UWBRcv::receive_loop, this));
+    timer_imu = this->create_wall_timer(1ms, std::bind(&UWBRcv::imu_loop, this));
   }
 
   ~UWBRcv() override { close(sockfd_); }
 
 private:
-  void receive_loop()
-  {
+  void imu_loop() {
+	std::lock_guard<std::mutex> lk(data_mutex);
+	std::string msg(buffer);
+	size_t space, space1, end;
+
+	if (esp_clients_.size() > 1) {
+		space = msg.find(' ');
+		end = msg.find('\r');
+		if (space != std::string::npos) {
+			space1 = msg.substr(space).find(' ');
+	  }
+	}
+  }
+  
+  void receive_loop() {
+	std::lock_guard<std::mutex> lk(data_mutex);
     sockaddr_in client_addr{};
     socklen_t len = sizeof(client_addr);
-    char buffer[BUF_SIZE];
 
     // Non-blocking read: MSG_DONTWAIT prevents blocking if no data
     int n = recvfrom(sockfd_, buffer, BUF_SIZE - 1, MSG_DONTWAIT,
                      (struct sockaddr *)&client_addr, &len);
 
-    while (n > 0) {
+    while (n > 0) { 
       buffer[n] = '\0';
       std::string msg(buffer);
       //RCLCPP_INFO(this->get_logger(), "Received: %s", msg.c_str());
-	  
 	  //RCLCPP_INFO(this->get_logger(), "Received message: %s", msg.c_str());
+	  
 	  remember_esp_from_msg(msg, client_addr);
-      parse_and_publish(msg);
+	  if (esp_clients_.size() > 1) {
+		  parse_and_publish(msg);
+	  }
 
       // try reading the next waiting packet
       n = recvfrom(sockfd_, buffer, BUF_SIZE - 1, MSG_DONTWAIT,
@@ -118,7 +139,7 @@ private:
         if (end == std::string::npos) end = msg.size();
 
         esp_addr = msg.substr(dash + 1, colon - (dash + 1));
-        esp_status = msg.substr(colon + 1, end - (colon + 1));
+        esp_status_rcv = msg.substr(colon + 1, end - (colon + 1));
 
         // Trim any unwanted whitespace or newline characters
         auto trim = [](std::string &s){
@@ -126,19 +147,27 @@ private:
             while (!s.empty() && (s.front() == ' ' || s.front() == '\t')) s.erase(s.begin());
         };
         trim(esp_addr);
-        trim(esp_status);
+        trim(esp_status_rcv);
 
-        RCLCPP_INFO(this->get_logger(), "Parsed: ESP_ADDR=%s, ESP_STATUS=%s", esp_addr.c_str(), esp_status.c_str());
+        RCLCPP_INFO(this->get_logger(), "Parsed: ESP_ADDR=%s, ESP_STATUS=%s", esp_addr.c_str(), esp_status_rcv.c_str());
 
-        if (esp_status == "FINISHED") {
-            if (esp_addr == "10") send_command_to_esp("20", "START");
-            else if (esp_addr == "20") send_command_to_esp("10", "START");
+        if (esp_status_rcv == "FINISHED") {
+            if (esp_addr == "10") {
+				send_command_to_esp("20", "START");
+				esp_status_snd = "START";
+				esp_addr = "20";
+			}
+            else if (esp_addr == "20") {
+				send_command_to_esp("10", "START");
+				esp_status_snd = "START";
+				esp_addr = "10";
+			}
             else RCLCPP_WARN(this->get_logger(), "Unknown ESP address: %s", esp_addr.c_str());
             return;
         }
 
         // Handle other statuses
-        if (esp_status == "START" || esp_status == "STOP" || esp_status == "HELLO") {
+        if (esp_status_snd == "START" || esp_status_snd == "STOP" || esp_status_rcv == "HELLO") {
             return;  // Skip distance processing for these control messages
         }
     }
@@ -152,10 +181,13 @@ private:
     std::string val_str = msg.substr(colon2 + 1);
     try {
         double val = std::stod(val_str);
+        //std::cout << val << std::endl;
         example_interfaces::msg::Float64 out;
         out.data = val;
-        
-        if (esp_addr == "10" && esp_status == "START") {
+        //std::cout << esp_addr << std::endl;
+        //std::cout << esp_status_rcv << std::endl;
+        //std::cout << id << std::endl;
+        if (esp_addr == "10" && esp_status_snd == "START") {
 			if (id.find("0") != std::string::npos)
             publisher_anc1_t1->publish(out);
 			else if (id.find("1") != std::string::npos)
@@ -166,7 +198,7 @@ private:
 				publisher_anc4_t1->publish(out);
 			else if (id.find("4") != std::string::npos)
 				publisher_anc5_t1->publish(out);
-		} else if (esp_addr == "20" && esp_status == "START") {
+		} else if (esp_addr == "20" && esp_status_snd == "START") {
 			if (id.find("0") != std::string::npos)
             publisher_anc1_t2->publish(out);
 			else if (id.find("1") != std::string::npos)
@@ -223,9 +255,11 @@ private:
 	  }
 	}
 
+  std::mutex data_mutex;
   int sockfd_;
+  char buffer[BUF_SIZE];
   rclcpp::QoS qos_anc{rclcpp::KeepLast(3)};
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::TimerBase::SharedPtr timer_, timer_imu;
   
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc1_t1;
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc2_t1;
@@ -239,13 +273,19 @@ private:
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc4_t2;
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc5_t2;
   
-  std::string tag1_frame, tag2_frame, esp_addr, esp_status;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr tag1_imu;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr tag2_imu;
+  
+  std::string tag1_frame, tag2_frame, esp_addr, esp_addr_curr, esp_status_rcv, esp_status_snd;
 };
 
 int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<UWBRcv>());
+  auto node = std::make_shared<UWBRcv>();
+  rclcpp::executors::MultiThreadedExecutor executor;
+  executor.add_node(node);
+  executor.spin();
   rclcpp::shutdown();
   return 0;
 }
