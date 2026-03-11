@@ -63,25 +63,76 @@ public:
     RCLCPP_INFO(this->get_logger(), "Listening for UDP packets on port %d...", PORT);
 
     // Run the callback fast enough to drain UDP buffer
-    timer_ = this->create_wall_timer(1ms, std::bind(&UWBRcv::receive_loop, this));
-    timer_imu = this->create_wall_timer(1ms, std::bind(&UWBRcv::imu_loop, this));
+    timer_ = this->create_wall_timer(2.5ms, std::bind(&UWBRcv::receive_loop, this));
+    timer_imu = this->create_wall_timer(1.5ms, std::bind(&UWBRcv::imu_loop, this));
   }
 
   ~UWBRcv() override { close(sockfd_); }
 
 private:
   void imu_loop() {
-	std::lock_guard<std::mutex> lk(data_mutex);
-	std::string msg(buffer);
-	size_t space, space1, end;
+    std::lock_guard<std::mutex> lk(data_mutex);
+    std::string msg(buffer);
 
-	if (esp_clients_.size() > 1) {
-		space = msg.find(' ');
-		end = msg.find('\r');
-		if (space != std::string::npos) {
-			space1 = msg.substr(space).find(' ');
-	  }
-	}
+    if (esp_clients_.size() > 1) {
+        size_t space = msg.find(' ');
+        size_t space1 = std::string::npos;
+        size_t end = msg.find('\r');
+
+        if (space != std::string::npos) {
+            space1 = msg.find(' ', space + 1);
+        }
+
+        if (space != std::string::npos &&
+            space1 != std::string::npos &&
+            end != std::string::npos) {
+
+            std::string address_part = msg.substr(0, space);
+            std::string acc_part = msg.substr(space + 1, space1 - (space + 1));
+            std::string gyro_part = msg.substr(space1 + 1, end - (space1 + 1));
+            
+            space = acc_part.find(',');
+            space1 = acc_part.find(',', space + 1);
+            std::string ax = acc_part.substr(0, space).substr(4);
+            std::string ay = acc_part.substr(space + 1, space1 - (space + 1));
+            std::string az = acc_part.substr(space1 + 1, acc_part.length() - (space1 + 1));
+            
+            space = gyro_part.find(',');
+            space1 = gyro_part.find(',', space + 1);
+            std::string gx = gyro_part.substr(0, space).substr(5);
+            std::string gy = gyro_part.substr(space + 1, space1 - (space + 1));
+            std::string gz = gyro_part.substr(space1 + 1, gyro_part.length() - (space1 + 1));
+            
+            if (address_part.compare(8, 2, "10") == 0) {
+				tag1_imu_.header.stamp = this->get_clock()->now();
+				tag1_imu_.header.frame_id = "uwb/tag1/imu";
+				
+				tag1_imu_.angular_velocity.x = std::stof(gx);
+				tag1_imu_.angular_velocity.y = std::stof(gy);
+				tag1_imu_.angular_velocity.z = std::stof(gz);
+				
+				tag1_imu_.linear_acceleration.x = std::stof(ax);
+				tag1_imu_.linear_acceleration.y = std::stof(ay);
+				tag1_imu_.linear_acceleration.z = std::stof(az);
+				
+				tag1_imu->publish(tag1_imu_);
+				
+			} else if (address_part.compare(8, 2, "20") == 0) {
+				tag2_imu_.header.stamp = this->get_clock()->now();
+				tag2_imu_.header.frame_id = "uwb/tag1/imu";
+				
+				tag2_imu_.angular_velocity.x = std::stof(gx);
+				tag2_imu_.angular_velocity.y = std::stof(gy);
+				tag2_imu_.angular_velocity.z = std::stof(gz);
+				
+				tag2_imu_.linear_acceleration.x = std::stof(ax);
+				tag2_imu_.linear_acceleration.y = std::stof(ay);
+				tag2_imu_.linear_acceleration.z = std::stof(az);
+				
+				tag2_imu->publish(tag2_imu_);
+			}
+          }
+      }
   }
   
   void receive_loop() {
@@ -273,6 +324,7 @@ private:
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc4_t2;
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc5_t2;
   
+  sensor_msgs::msg::Imu tag1_imu_, tag2_imu_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr tag1_imu;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr tag2_imu;
   
