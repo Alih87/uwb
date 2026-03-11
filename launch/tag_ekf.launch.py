@@ -16,6 +16,29 @@ def generate_launch_description():
 		DeclareLaunchArgument('ekf_params', default_value='ekf_params', description='Intermediate global frame'),
     ]
     
+    static_tag_imu = Node(
+		package="tf2_ros",
+		executable="static_transform_publisher",
+		name=PythonExpression(['"static_imu_" + "', LaunchConfiguration('tag_frame'), '"']),
+		arguments=[
+			'0.0', '0.0', '0.0', '0.0', '0.0', '0.0',
+			LaunchConfiguration('tag_frame'),
+			[LaunchConfiguration('tag_frame'), '_imu_link']
+			]
+	)
+	
+    frame_transformer = Node(
+		package='imu_transformer',
+		executable='imu_transformer_node',
+		name=['enu_transform_', LaunchConfiguration('tag_frame')],
+		output='screen',
+		remappings=[
+			('imu_in',  ['uwb/', LaunchConfiguration('tag_frame'), '/imu_raw']),
+			('imu_out', ['uwb/', LaunchConfiguration('tag_frame'), '/imu']),
+		],
+		parameters=[{'target_frame': LaunchConfiguration('tag_frame')}],
+	)
+    
     uwb_tf_node = Node(
         package='uwb_test',
         executable='uwb_tf',
@@ -74,8 +97,10 @@ def generate_launch_description():
 	#)
     
     return LaunchDescription(declare_args + [
+		static_tag_imu,
+		frame_transformer,
 		uwb_tf_node,
 		ekf_tf_node,
 		ekf_filter_node_fused,
-		ekf_filter_node_map
+		ekf_filter_node_map,
     ])

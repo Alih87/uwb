@@ -25,8 +25,8 @@ public:
   UWBRcv()
   : Node("uwb_rcv")
   {
-    qos_anc.best_effort();
-    qos_anc.durability_volatile();
+    qos_anc.reliable();
+	qos_anc.durability_volatile();
     
     this->declare_parameter<std::string>("tag1");
     this->declare_parameter<std::string>("tag2");
@@ -45,8 +45,8 @@ public:
     publisher_anc4_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc3", qos_anc);
     publisher_anc5_t2 = this->create_publisher<example_interfaces::msg::Float64>("uwb/"+tag2_frame+"/d_anc4", qos_anc);
     
-    tag1_imu = this->create_publisher<sensor_msgs::msg::Imu>("uwb/"+tag1_frame+"/imu", qos_anc);
-    tag2_imu = this->create_publisher<sensor_msgs::msg::Imu>("uwb/"+tag2_frame+"/imu", qos_anc);
+    tag1_imu = this->create_publisher<sensor_msgs::msg::Imu>("uwb/"+tag1_frame+"/imu_raw", qos_anc);
+    tag2_imu = this->create_publisher<sensor_msgs::msg::Imu>("uwb/"+tag2_frame+"/imu_raw", qos_anc);
 
     // --- Create UDP socket ---
     sockfd_ = socket(AF_INET, SOCK_DGRAM, 0);
@@ -71,67 +71,67 @@ public:
 
 private:
   void imu_loop() {
-    std::lock_guard<std::mutex> lk(data_mutex);
-    std::string msg(buffer);
+      std::string msg;
+      {
+          std::lock_guard<std::mutex> lk(data_mutex);
+          msg = buffer;
+      }
 
-    if (esp_clients_.size() > 1) {
-        size_t space = msg.find(' ');
-        size_t space1 = std::string::npos;
-        size_t end = msg.find('\r');
+      if (esp_clients_.size() <= 1) {
+          return;
+      }
 
-        if (space != std::string::npos) {
-            space1 = msg.find(' ', space + 1);
-        }
+      size_t first_space = msg.find(' ');
+      size_t second_space = (first_space != std::string::npos) ? msg.find(' ', first_space + 1) : std::string::npos;
+      size_t end = msg.find('\r');
 
-        if (space != std::string::npos &&
-            space1 != std::string::npos &&
-            end != std::string::npos) {
+      if (first_space == std::string::npos ||
+          second_space == std::string::npos ||
+          end == std::string::npos) {
+          return;
+      }
 
-            std::string address_part = msg.substr(0, space);
-            std::string acc_part = msg.substr(space + 1, space1 - (space + 1));
-            std::string gyro_part = msg.substr(space1 + 1, end - (space1 + 1));
-            
-            space = acc_part.find(',');
-            space1 = acc_part.find(',', space + 1);
-            std::string ax = acc_part.substr(0, space).substr(4);
-            std::string ay = acc_part.substr(space + 1, space1 - (space + 1));
-            std::string az = acc_part.substr(space1 + 1, acc_part.length() - (space1 + 1));
-            
-            space = gyro_part.find(',');
-            space1 = gyro_part.find(',', space + 1);
-            std::string gx = gyro_part.substr(0, space).substr(5);
-            std::string gy = gyro_part.substr(space + 1, space1 - (space + 1));
-            std::string gz = gyro_part.substr(space1 + 1, gyro_part.length() - (space1 + 1));
-            
-            if (address_part.compare(8, 2, "10") == 0) {
-				tag1_imu_.header.stamp = this->get_clock()->now();
-				tag1_imu_.header.frame_id = "uwb/tag1/imu";
-				
-				tag1_imu_.angular_velocity.x = std::stof(gx);
-				tag1_imu_.angular_velocity.y = std::stof(gy);
-				tag1_imu_.angular_velocity.z = std::stof(gz);
-				
-				tag1_imu_.linear_acceleration.x = std::stof(ax);
-				tag1_imu_.linear_acceleration.y = std::stof(ay);
-				tag1_imu_.linear_acceleration.z = std::stof(az);
-				
-				tag1_imu->publish(tag1_imu_);
-				
-			} else if (address_part.compare(8, 2, "20") == 0) {
-				tag2_imu_.header.stamp = this->get_clock()->now();
-				tag2_imu_.header.frame_id = "uwb/tag1/imu";
-				
-				tag2_imu_.angular_velocity.x = std::stof(gx);
-				tag2_imu_.angular_velocity.y = std::stof(gy);
-				tag2_imu_.angular_velocity.z = std::stof(gz);
-				
-				tag2_imu_.linear_acceleration.x = std::stof(ax);
-				tag2_imu_.linear_acceleration.y = std::stof(ay);
-				tag2_imu_.linear_acceleration.z = std::stof(az);
-				
-				tag2_imu->publish(tag2_imu_);
-			}
+      std::string address_part = msg.substr(0, first_space);
+      std::string acc_part = msg.substr(first_space + 1, second_space - first_space - 1);
+      std::string gyro_part = msg.substr(second_space + 1, end - second_space - 1);
+
+      try {
+          size_t c1 = acc_part.find(',');
+          size_t c2 = (c1 != std::string::npos) ? acc_part.find(',', c1 + 1) : std::string::npos;
+          if (c1 == std::string::npos || c2 == std::string::npos) return;
+
+          float ax = std::stof(acc_part.substr(4, c1 - 4));
+          float ay = std::stof(acc_part.substr(c1 + 1, c2 - c1 - 1));
+          float az = std::stof(acc_part.substr(c2 + 1));
+
+          c1 = gyro_part.find(',');
+          c2 = (c1 != std::string::npos) ? gyro_part.find(',', c1 + 1) : std::string::npos;
+          if (c1 == std::string::npos || c2 == std::string::npos) return;
+
+          float gx = std::stof(gyro_part.substr(5, c1 - 5));
+          float gy = std::stof(gyro_part.substr(c1 + 1, c2 - c1 - 1));
+          float gz = std::stof(gyro_part.substr(c2 + 1));
+			
+          sensor_msgs::msg::Imu imu_msg;
+          imu_msg.header.stamp = this->get_clock()->now();
+          imu_msg.orientation_covariance[0] = -1;
+          imu_msg.angular_velocity.x = gx;
+          imu_msg.angular_velocity.y = gy;
+          imu_msg.angular_velocity.z = gz;
+          imu_msg.linear_acceleration.x = ax;
+          imu_msg.linear_acceleration.y = ay;
+          imu_msg.linear_acceleration.z = az;
+
+          if (address_part.size() >= 10 && address_part.compare(8, 2, "10") == 0) {
+            imu_msg.header.frame_id = tag1_frame + "_imu_link";
+            tag1_imu->publish(imu_msg);
+          } else if (address_part.size() >= 10 && address_part.compare(8, 2, "20") == 0) {
+            imu_msg.header.frame_id = tag2_frame + "_imu_link";
+            tag2_imu->publish(imu_msg);
           }
+
+    } catch (const std::exception &e) {
+        RCLCPP_WARN(this->get_logger(), "Failed to parse IMU message: %s | raw: %s", e.what(), msg.c_str());
       }
   }
   
@@ -324,7 +324,6 @@ private:
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc4_t2;
   rclcpp::Publisher<example_interfaces::msg::Float64>::SharedPtr publisher_anc5_t2;
   
-  sensor_msgs::msg::Imu tag1_imu_, tag2_imu_;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr tag1_imu;
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr tag2_imu;
   
