@@ -13,7 +13,8 @@ def generate_launch_description():
 		DeclareLaunchArgument('anc4', default_value='anc4', description='Anchor 5 location (x,y)'),
 		DeclareLaunchArgument('tag_frame', default_value='tag_frame', description='Tag frame'),
 		DeclareLaunchArgument('aux_frame', default_value='aux_frame', description='Intermediate global frame'),
-		DeclareLaunchArgument('ekf_params', default_value='ekf_params', description='Intermediate global frame'),
+		DeclareLaunchArgument('ekf_params', default_value='ekf_params', description='EKF node parameters'),
+		DeclareLaunchArgument('imu_params', default_value='imu_params', description='Madgwick filter parameters')
     ]
     
     static_tag_imu = Node(
@@ -38,6 +39,17 @@ def generate_launch_description():
 		],
 		parameters=[{'target_frame': LaunchConfiguration('tag_frame')}],
 	)
+
+    madgwick_filter_ = Node(
+                package='imu_filter_madgwick',
+                executable='imu_filter_madgwick_node',
+                name=['imu_filter_', LaunchConfiguration('tag_frame')],
+                output='screen',
+                parameters=[LaunchConfiguration('imu_params')],
+                remappings=[
+			('imu/data_raw', ['/uwb/', LaunchConfiguration('tag_frame'), '/imu']),
+			('imu/data', ['/uwb/', LaunchConfiguration('tag_frame'), '/imu_tag'])]
+    )
     
     uwb_tf_node = Node(
         package='uwb_test',
@@ -99,6 +111,7 @@ def generate_launch_description():
     return LaunchDescription(declare_args + [
 		static_tag_imu,
 		frame_transformer,
+		madgwick_filter_,
 		uwb_tf_node,
 		ekf_tf_node,
 		ekf_filter_node_fused,

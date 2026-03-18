@@ -27,6 +27,8 @@ aux_frame = "map_uwb"
 #DUAL_EKF_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb.yaml')
 DUAL_EKF_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_tag1.yaml')
 DUAL_EKF_PARAMS_TAG2 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_tag2.yaml')
+IMU_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'imu_filter_tag1.yaml')
+IMU_PARAMS_TAG2 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'imu_filter_tag2.yaml')
 
 def generate_launch_description():
     # --- Launch configurations ---
@@ -222,7 +224,8 @@ def generate_launch_description():
                 'anc4': STATIC_ANCHORS['anc4'][0]+","+STATIC_ANCHORS['anc4'][1],
                 'tag_frame': tag_1,
                 'aux_frame': aux_frame,
-                'ekf_params': DUAL_EKF_PARAMS_TAG1
+                'ekf_params': DUAL_EKF_PARAMS_TAG1,
+                'imu_params': IMU_PARAMS_TAG1
             }.items()
         )
         
@@ -236,7 +239,8 @@ def generate_launch_description():
                 'anc4': STATIC_ANCHORS['anc4'][0]+","+STATIC_ANCHORS['anc4'][1],
                 'tag_frame': tag_2,
                 'aux_frame': aux_frame,
-                'ekf_params': DUAL_EKF_PARAMS_TAG2
+                'ekf_params': DUAL_EKF_PARAMS_TAG2,
+                'imu_params': IMU_PARAMS_TAG2
             }.items()
         )
 	

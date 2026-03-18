@@ -114,7 +114,6 @@ private:
 			
           sensor_msgs::msg::Imu imu_msg;
           imu_msg.header.stamp = this->get_clock()->now();
-          imu_msg.orientation_covariance[0] = -1;
           imu_msg.angular_velocity.x = gx;
           imu_msg.angular_velocity.y = gy;
           imu_msg.angular_velocity.z = gz;
@@ -124,9 +123,31 @@ private:
 
           if (address_part.size() >= 10 && address_part.compare(8, 2, "10") == 0) {
             imu_msg.header.frame_id = tag1_frame + "_imu_link";
+            imu_msg.angular_velocity_covariance = {
+			  2.48696198e-07, 1.45460038e-07, 0.0,
+			  1.45460038e-07, 2.36054903e-05, -1.74169755e-07,
+			  -6.45012625e-08, 0.0, 3.0022835e-07
+			  };
+			  
+			imu_msg.linear_acceleration_covariance = {
+			  0.00089055, -0.00020792, -0.00035547,
+			  -0.00020792,  0.0006797,   0.00016247,
+			  -0.00035547,  0.00016247,  0.0010234
+			  };
             tag1_imu->publish(imu_msg);
           } else if (address_part.size() >= 10 && address_part.compare(8, 2, "20") == 0) {
             imu_msg.header.frame_id = tag2_frame + "_imu_link";
+            imu_msg.angular_velocity_covariance = {
+			  8.40307611e-08,  5.53873141e-08, -1.52010842e-08,
+			  5.53873141e-08,  1.23388406e-06, -1.33560758e-07,
+			  -1.52010842e-08, -1.33560758e-07,  1.33460380e-06
+			  };
+			  
+			imu_msg.linear_acceleration_covariance = {
+			  7.46352656e-04, -1.09487665e-04, -1.99120637e-04,
+			  -1.09487665e-04,  4.36112901e-04,  3.59955636e-05,
+			  -1.99120637e-04,  3.59955636e-05,  7.75708276e-04
+			  };
             tag2_imu->publish(imu_msg);
           }
 
