@@ -168,9 +168,9 @@ private:
 		
 		g_removed_imu.orientation = imu_msg.orientation;
 		g_removed_imu.orientation_covariance = {
-			0.001, 0.0, 0.0,
-			0.0, 0.001, 0.0,
-			0.0, 0.0, 0.001
+			0.0035, 0.0, 0.0,
+			0.0, 0.0035, 0.0,
+			0.0, 0.0, 0.0035
 			};
 			
 		g_removed_imu.angular_velocity = imu_msg.angular_velocity;
