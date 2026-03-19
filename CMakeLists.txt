@@ -34,7 +34,7 @@ add_executable(uwb_tf src/uwb_transform.cpp)
 ament_target_dependencies(uwb_tf rclcpp std_msgs nav_msgs tf2_ros tf2_geometry_msgs serial Eigen3 example_interfaces)
 
 add_executable(ekf_tf src/ekf_transform.cpp)
-ament_target_dependencies(ekf_tf rclcpp std_msgs nav_msgs tf2_ros tf2_geometry_msgs serial Eigen3 example_interfaces)
+ament_target_dependencies(ekf_tf rclcpp std_msgs nav_msgs sensor_msgs tf2_ros tf2_geometry_msgs serial Eigen3 example_interfaces)
 
 add_executable(dynamic_tf_pub src/dynamic_transforms_pub.cpp)
 ament_target_dependencies(dynamic_tf_pub rclcpp std_msgs nav_msgs tf2_ros serial)

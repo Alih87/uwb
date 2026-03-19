@@ -2,6 +2,7 @@
 #include <rclcpp/executors/multi_threaded_executor.hpp>
 #include <example_interfaces/msg/float64_multi_array.hpp>
 #include <geometry_msgs/msg/transform.hpp>
+#include <sensor_msgs/msg/imu.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <tf2/LinearMath/Matrix3x3.h>
 #include <tf2/LinearMath/Transform.h>
@@ -20,6 +21,9 @@ public:
     {
 		this->declare_parameter<std::string>("tag_frame");
 		tag_frame = this->get_parameter("tag_frame").as_string();
+		
+		qos_imu.reliable();
+		qos_imu.durability_volatile();
 		
 		qos_odom.best_effort();
 		qos_odom.durability_volatile();
@@ -51,13 +55,19 @@ public:
             "uwb/"+tag_frame+"/static_filtered", qos_odom,
             [this](const nav_msgs::msg::Odometry::SharedPtr msg){ this->static_filtered_callback(msg); });
             
-        logs_pub_ = this->create_publisher<example_interfaces::msg::Float64MultiArray>("/ekf/"+tag_frame+"/metrics", 2);
+        imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(
+            "uwb/"+tag_frame+"/imu_tag", qos_odom,
+            [this](const sensor_msgs::msg::Imu::SharedPtr msg){ this->imu_callback(msg); });
+            
+        imu_pub = this->create_publisher<sensor_msgs::msg::Imu>("uwb/"+tag_frame+"/imu", qos_imu);
+        logs_pub_ = this->create_publisher<example_interfaces::msg::Float64MultiArray>("/ekf/"+tag_frame+"/metrics", qos_metric);
 		logs.data.resize(24, 0.0);
 
 
         tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
-		timer_ = this->create_wall_timer(50ms, std::bind(&EKFTransform::timer_callback, this));
+		//timer_logger = this->create_wall_timer(50ms, std::bind(&EKFTransform::logger_callback, this));
+		//timer_imu = this->create_wall_timer(50ms, std::bind(&EKFTransform::imu_callback, this));
 		delta_timer_ = this->create_wall_timer(66ms, std::bind(&EKFTransform::time_delta, this));
     }
 
@@ -68,14 +78,18 @@ private:
 	nav_msgs::msg::Odometry dynamic_odom_msg;
     nav_msgs::msg::Odometry static_odom_msg;
     nav_msgs::msg::Odometry static_odom_filtered_msg;
+    sensor_msgs::msg::Imu imu_msg, g_removed_imu;
     
     tf2::Transform T_map_tag, T_odom_tag, T_map_odom;
     geometry_msgs::msg::TransformStamped T_map_odom_msg, T_odom_tag_msg;
 	
 	rclcpp::QoS qos_odom{rclcpp::KeepLast(3)};
 	rclcpp::QoS qos_metric{rclcpp::KeepLast(3)};
+	rclcpp::QoS qos_imu{rclcpp::KeepLast(3)};
     rclcpp::TimerBase::SharedPtr timer_ ,delta_timer_;
     rclcpp::Publisher<example_interfaces::msg::Float64MultiArray>::SharedPtr logs_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub;
+    rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr uwb_dynamic_sub;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr uwb_static_sub;
     
@@ -131,6 +145,45 @@ private:
         std::lock_guard<std::mutex> lk(mtx_);
         dynamic_4_5_3_msg = *msg;
     }
+    
+    void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) {
+		std::lock_guard<std::mutex> lk(mtx_);
+		imu_msg = *msg;
+		
+		tf2::Vector3 a_sensor(
+			imu_msg.linear_acceleration.x,
+			imu_msg.linear_acceleration.y,
+			imu_msg.linear_acceleration.z);
+
+		tf2::Quaternion q_ws;
+		tf2::fromMsg(imu_msg.orientation, q_ws);
+		q_ws.normalize();
+
+		tf2::Vector3 a_world = tf2::quatRotate(q_ws.inverse(), a_sensor);
+		tf2::Vector3 g_world(0.0, 0.0, 9.80665);
+		tf2::Vector3 a_linear_world = a_world - g_world;
+		
+		g_removed_imu.header.stamp = imu_msg.header.stamp;
+		g_removed_imu.header.frame_id = tag_frame;
+		
+		g_removed_imu.orientation = imu_msg.orientation;
+		g_removed_imu.orientation_covariance = {
+			0.001, 0.0, 0.0,
+			0.0, 0.001, 0.0,
+			0.0, 0.0, 0.001
+			};
+			
+		g_removed_imu.angular_velocity = imu_msg.angular_velocity;
+		g_removed_imu.angular_velocity_covariance = imu_msg.angular_velocity_covariance;
+		
+		g_removed_imu.linear_acceleration.x = a_linear_world.getX();
+		g_removed_imu.linear_acceleration.y = a_linear_world.getY();
+		g_removed_imu.linear_acceleration.z = a_linear_world.getZ();
+		
+		g_removed_imu.linear_acceleration_covariance = imu_msg.linear_acceleration_covariance;
+		
+		imu_pub->publish(g_removed_imu);
+	}
     
     void printTransform(const geometry_msgs::msg::Transform& tf_msg, const std::string& name = "")
 	{
@@ -304,6 +357,7 @@ private:
 		logs.data[22] = sqrt(pow(x_dyn_1_4_3 - x_dyn_1_5_3, 2) + pow(y_dyn_1_4_3 - y_dyn_1_5_3, 2))
 						+ sqrt(pow(x_dyn_1_4_3 - x_dyn_4_5_3, 2) + pow(y_dyn_1_4_3 - y_dyn_4_5_3, 2))
 						+ sqrt(pow(x_dyn_1_5_3 - x_dyn_4_5_3, 2) + pow(y_dyn_1_5_3 - y_dyn_4_5_3, 2));
+		
 		//	logs.data[20] = (y_tf - y_tf_prev) / delta_t;
 		//	logs.data[21] = (y_dyn_tf - y_dyn_tf_prev) / delta_t;
 		//	tf2::fromMsg(yaw_tf, q_);
