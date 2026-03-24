@@ -2,7 +2,7 @@
 
 ekf_filter_node_fused:
   ros__parameters:
-    frequency: 30.0
+    frequency: 15.0
     sensor_timeout: 0.1
     two_d_mode: true
     transform_time_offset: 0.0
@@ -10,13 +10,13 @@ ekf_filter_node_fused:
     print_diagnostics: true
     debug: false
     publish_tf: false
-    publish_acceleration: true
+    publish_acceleration: false
     
-    odom_frame: map
-    base_link_frame: tag_link
+    odom_frame: odom
+    base_link_frame: base_link
     world_frame: map
 
-    odom0: uwb/dyn_odom1_4_3
+    odom0: scout/odom
     odom0_config: [true,  true,  false,
                   false, false, false,
                   false, false, false,
@@ -26,40 +26,18 @@ ekf_filter_node_fused:
     odom0_nodelay: true
     odom0_differential: false
     odom0_relative: false
-    
-    odom1: uwb/dyn_odom1_5_3
-    odom1_config: [true,  true,  false,
-                  false, false, false,
-                  false, false, false,
-                  false, false, false,
-                  false, false, false]
-    odom1_queue_size: 10
-    odom1_nodelay: true
-    odom1_differential: false
-    odom1_relative: false
-    
-    odom2: uwb/dyn_odom4_5_3
-    odom2_config: [true,  true,  false,
-                  false, false, false,
-                  false, false, false,
-                  false, false, false,
-                  false, false, false]
-    odom2_queue_size: 10
-    odom2_nodelay: true
-    odom2_differential: false
-    odom2_relative: false
 
-    #imu0: imu/data
-    #imu0_config: [false, false, false,
-    #              true,  true,  false,
-    #              false, false, false,
-    #              true,  true,  true,
-    #              true,  true,  true]
-    #imu0_nodelay: true
-    #imu0_differential: false
-    #imu0_relative: false
-    #imu0_queue_size: 10
-    #imu0_remove_gravitational_acceleration: true
+    imu0: imu/data
+    imu0_config: [false, false, false,
+                  true,  true,  false,
+                  false, false, false,
+                  true,  true,  true,
+                  true,  true,  true]
+    imu0_nodelay: true
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true
 
     use_control: false
 
@@ -98,7 +76,7 @@ ekf_filter_node_fused:
 
 ekf_filter_node_map:
   ros__parameters:
-    frequency: 30.0
+    frequency: 15.0
     sensor_timeout: 0.1
     two_d_mode: true
     transform_time_offset: 0.0
@@ -106,11 +84,11 @@ ekf_filter_node_map:
     print_diagnostics: true
     debug: false
     publish_tf: true
-    publish_acceleration: true
+    publish_acceleration: false
 
     map_frame: map
     odom_frame: map
-    base_link_frame: tag_link
+    base_link_frame: base_link
     world_frame: map
 
     odom0: uwb/static_odom
@@ -124,28 +102,17 @@ ekf_filter_node_map:
     odom0_differential: false
     odom0_relative: false
 
-    odom1: uwb/dyn_fused
-    odom1_config: [true,  true,  false,
+    imu0: imu/data
+    imu0_config: [false, false, false,
+                  true,  true,  false,
                   false, false, false,
-                  false, false, false,
-                  false, false, false,
-                  false, false, false]
-    odom1_queue_size: 10
-    odom1_nodelay: true
-    odom1_differential: false
-    odom1_relative: false
-
-    #imu0: imu/data
-    #imu0_config: [false, false, false,
-    #              true,  true,  false,
-    #              false, false, false,
-    #              true,  true,  true,
-    #              true,  true,  true]
-    #imu0_nodelay: true
-    #imu0_differential: false
-    #imu0_relative: false
-    #imu0_queue_size: 10
-    #imu0_remove_gravitational_acceleration: true
+                  true,  true,  true,
+                  true,  true,  true]
+    imu0_nodelay: true
+    imu0_differential: false
+    imu0_relative: false
+    imu0_queue_size: 10
+    imu0_remove_gravitational_acceleration: true
 
     use_control: false
 
@@ -181,15 +148,15 @@ ekf_filter_node_map:
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    1e-3,    0.0,
                                   0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,     0.0,    0.0,    1.0]
 
-#navsat_transform:
-#  ros__parameters:
-#    frequency: 30.0
-#    delay: 3.0
-#    magnetic_declination_radians: 0.0429351  # For lat/long 55.944831, -3.186998
-#    yaw_offset: 1.570796327  # IMU reads 0 facing magnetic north, not east
-#    zero_altitude: false
-#    broadcast_utm_transform: true
-#    publish_filtered_gps: true
-#    use_odometry_yaw: false
-#    wait_for_datum: false
+navsat_transform:
+  ros__parameters:
+    frequency: 30.0
+    delay: 3.0
+    magnetic_declination_radians: 0.0429351  # For lat/long 55.944831, -3.186998
+    yaw_offset: 1.570796327  # IMU reads 0 facing magnetic north, not east
+    zero_altitude: false
+    broadcast_utm_transform: true
+    publish_filtered_gps: true
+    use_odometry_yaw: false
+    wait_for_datum: false
 

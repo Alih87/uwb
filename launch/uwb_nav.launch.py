@@ -4,6 +4,8 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from ament_index_python.packages import get_package_share_directory
+from launch_ros.substitutions import FindPackageShare
+from launch.substitutions import PathJoinSubstitution
 import os
 from launch.actions import TimerAction
 
@@ -105,11 +107,24 @@ def generate_launch_description():
         output='screen'
     )
     
+    baselink_transformer = Node(
+		package='imu_transformer',
+		executable='imu_transformer_node',
+		name='baselink_transformer_node',
+		output='screen',
+		remappings=[
+			('imu_in',  '/imu/data_raw'),
+			('imu_out', '/imu/data'),
+		],
+		parameters=[{'target_frame': 'base_link'}],
+	)
+    
     umx_driver_node = Node(
         package='umx_driver',
         executable='um7_driver',
         name='um7_node',
-        output='screen'
+        output='screen',
+        remappings=[('imu/data', 'imu/data_raw')]
     )
     
     uwb_rcv_node = Node(
@@ -121,6 +136,19 @@ def generate_launch_description():
 			'tag2': tag_2
         }],
         output='screen'
+    )
+    
+    realsense_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([
+                FindPackageShare('realsense2_camera'),
+                'launch',
+                'rs_launch.py'
+            ])
+        ),
+        launch_arguments={
+            'align_depth.enable': 'true',
+        }.items()
     )
     
     dynamic_tf_node = Node(
@@ -200,11 +228,18 @@ def generate_launch_description():
 		arguments=['0.36','0.0','0.0','0.0','0.0','0.0','base_link','imu_link']
 	)
 	
-    static_base_lidar = Node(
+    static_base_color = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
-		name="static_tf_lidar",
-		arguments=['0.285','0.0','0.0','0.0','3.14','3.14','base_link','laser']
+		name="static_tf_color",
+		arguments=['0.285','0.075','0.0','0.0','0.0','0.0','base_link','camera_color_optical_frame']
+	)
+	
+    static_base_depth = Node(
+		package="tf2_ros",
+		executable="static_transform_publisher",
+		name="static_tf_depth",
+		arguments=['0.285','0.075','0.0','0.0','0.0','0.0','base_link','camera_depth_optical_frame']
 	)
 	
     static_base_gnss = Node(
@@ -213,6 +248,30 @@ def generate_launch_description():
 		name="static_tf_gnss",
 		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','base_link','gps']
 	)
+
+    ekf_filter_node_fused = Node(
+		package="robot_localization",
+		executable="ekf_node",
+		name='ekf_filter_node_fused',
+		parameters=[{PythonExpression(['"ekf_filter_node_fused_" + "', LaunchConfiguration('tag_frame'), '"']): ""}, LaunchConfiguration('ekf_params')],
+		remappings=[('odometry/filtered', 'scout/odom_filtered')]
+	)
+	
+    ekf_filter_node_map = Node(
+		package="robot_localization",
+		executable="ekf_node",
+		name='ekf_filter_node_map',
+		parameters=[{PythonExpression(['"ekf_filter_node_map_" + "', LaunchConfiguration('tag_frame'), '"']): ""}, LaunchConfiguration('ekf_params')],
+		remappings=[('odometry/filtered', 'scout/map')]
+	)
+	
+    navsat_node_ = Node(
+            package='robot_localization',
+            executable='navsat_transform_node',
+            name='navsat_transform_node',
+            output='screen',
+            parameters=[os.path.join(get_package_share_directory("robot_localization"), 'params', 'navsat_transform.yaml')],
+    )
 	
     tag1_ekf_launch = IncludeLaunchDescription(
             launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'tag_ekf.launch.py'),
@@ -252,18 +311,21 @@ def generate_launch_description():
     # --- Return LaunchDescription ---
     return LaunchDescription(declare_args + [
         delayed_scout,
-        static_map_odom,
-        static_uwb_0,
-        static_uwb_3,
-        static_uwb_4,
+        #static_map_odom,
+        #static_uwb_0,
+        #static_uwb_3,
+        #static_uwb_4,
         static_base_imu,
-        static_base_lidar,
+        static_base_color,
+        static_base_depth,
         static_base_gnss,
-        #ublox_gps_node,
+        ublox_gps_node,
         umx_driver_node,
-        uwb_rcv_node,
-        tag1_ekf_launch,
-        tag2_ekf_launch,
+        baselink_transformer,
+        realsense_launch,
+        #uwb_rcv_node,
+        #tag1_ekf_launch,
+        #tag2_ekf_launch,
         #rplidar_ros_node,
-        rviz2_lidar_node
+        #rviz2_lidar_node
     ])
