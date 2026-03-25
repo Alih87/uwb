@@ -140,17 +140,19 @@ def generate_launch_description():
         output='screen'
     )
     
-    realsense_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            PathJoinSubstitution([
-                FindPackageShare('realsense2_camera'),
-                'launch',
-                'rs_launch.py'
-            ])
-        ),
-        launch_arguments={
-            'align_depth.enable': 'true',
-        }.items()
+    realsense_launch = Node(
+        package='realsense2_camera',
+        executable='realsense2_camera_node',
+        namespace='camera',
+        name='camera',
+        output='screen',
+        parameters=[{
+            'enable_color': True,
+            'enable_depth': True,
+            'align_depth.enable': True,
+            'pointcloud__neon_.enable': True,
+        }],
+        arguments=['--ros-args', '--log-level', 'info'],
     )
     
     dynamic_tf_node = Node(
@@ -158,6 +160,20 @@ def generate_launch_description():
         executable='dynamic_tf_pub',
         name='dynamic_tf_pub',
         output='screen'
+    )
+    
+    rviz2_config = os.path.join(
+        get_package_share_directory('uwb_test'),
+        'config',
+        'rviz2_config_.rviz'
+    )
+    
+    rviz2_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz2_config]
     )
     
     rviz2_lidar_node = Node(
@@ -327,5 +343,6 @@ def generate_launch_description():
         #tag1_ekf_launch,
         #tag2_ekf_launch,
         #rplidar_ros_node,
-        #rviz2_lidar_node
+        #rviz2_lidar_node,
+        rviz2_node
     ])
