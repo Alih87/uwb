@@ -26,7 +26,7 @@ tag_2 = "tag2"
 
 aux_frame = "map_uwb"
 
-#DUAL_EKF_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb.yaml')
+DUAL_EKF_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb.yaml')
 DUAL_EKF_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_tag1.yaml')
 DUAL_EKF_PARAMS_TAG2 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_tag2.yaml')
 IMU_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'imu_filter_tag1.yaml')
@@ -34,35 +34,37 @@ IMU_PARAMS_TAG2 = os.path.join(os.path.join(get_package_share_directory('uwb_tes
 
 def generate_launch_description():
     # --- Launch configurations ---
-    channel_type = LaunchConfiguration('channel_type', default='serial')
-    serial_port = LaunchConfiguration('serial_port', default='/dev/lidar')
-    serial_baudrate = LaunchConfiguration('serial_baudrate', default='256000')
-    frame_id = LaunchConfiguration('frame_id', default='laser')
-    inverted = LaunchConfiguration('inverted', default='false')
-    angle_compensate = LaunchConfiguration('angle_compensate', default='false')
-    scan_mode = LaunchConfiguration('scan_mode', default='Sensitivity')
+    rplidar_channel_type = LaunchConfiguration('rplidar_channel_type')
+    rplidar_serial_port = LaunchConfiguration('rplidar_serial_port')
+    rplidar_serial_baudrate = LaunchConfiguration('rplidar_serial_baudrate')
+    rplidar_frame_id = LaunchConfiguration('rplidar_frame_id')
+    rplidar_inverted = LaunchConfiguration('rplidar_inverted')
+    rplidar_angle_compensate = LaunchConfiguration('rplidar_angle_compensate')
+    rplidar_scan_mode = LaunchConfiguration('rplidar_scan_mode')
 
     # --- Declare arguments ---
     declare_args = [
-        DeclareLaunchArgument('channel_type', default_value='serial',
+        DeclareLaunchArgument('rplidar_channel_type', default_value='serial',
                               description='Specifying channel type of lidar'),
-        DeclareLaunchArgument('serial_port', default_value='/dev/lidar',
+        DeclareLaunchArgument('rplidar_serial_port', default_value='/dev/lidar',
                               description='Specifying usb port to connected lidar'),
-        DeclareLaunchArgument('serial_baudrate', default_value='256000',
+        DeclareLaunchArgument('rplidar_serial_baudrate', default_value='256000',
                               description='Specifying usb port baudrate to connected lidar'),
-        DeclareLaunchArgument('frame_id', default_value='laser',
+        DeclareLaunchArgument('rplidar_frame_id', default_value='laser',
                               description='Specifying frame_id of lidar'),
-        DeclareLaunchArgument('inverted', default_value='false',
+        DeclareLaunchArgument('rplidar_inverted', default_value='false',
                               description='Specifying whether or not to invert scan data'),
-        DeclareLaunchArgument('angle_compensate', default_value='false',
+        DeclareLaunchArgument('rplidar_angle_compensate', default_value='false',
                               description='Specifying whether or not to enable angle compensation'),
-        DeclareLaunchArgument('scan_mode', default_value='Sensitivity',
+        DeclareLaunchArgument('rplidar_scan_mode', default_value='Sensitivity',
                               description='Specifying scan mode of lidar'),
         DeclareLaunchArgument('use_sim_time', default_value='false',
                                              description='Use simulation clock if true'),
 		
 	# Scout_ros2 parameters
-		DeclareLaunchArgument('port_name', default_value='can1',
+		DeclareLaunchArgument('scout_use_sim_time', default_value='false',
+                                             description='Use simulation clock if true'),
+		DeclareLaunchArgument('scout_port_name', default_value='can1',
 											 description='CAN bus name, e.g. can1'),
 		DeclareLaunchArgument('odom_frame', default_value='odom',
 											   description='Odometry frame id'),
@@ -96,13 +98,13 @@ def generate_launch_description():
         executable='rplidar_node',
         name='rplidar_node',
         parameters=[{
-            'channel_type': channel_type,
-            'serial_port': serial_port,
-            'serial_baudrate': serial_baudrate,
-            'frame_id': frame_id,
-            'inverted': inverted,
-            'angle_compensate': angle_compensate,
-            'scan_mode': scan_mode
+            'channel_type': rplidar_channel_type,
+            'serial_port': rplidar_serial_port,
+            'serial_baudrate': rplidar_serial_baudrate,
+            'frame_id': rplidar_frame_id,
+            'inverted': rplidar_inverted,
+            'angle_compensate': rplidar_angle_compensate,
+            'scan_mode': rplidar_scan_mode
         }],
         output='screen'
     )
@@ -172,8 +174,8 @@ def generate_launch_description():
         output='screen',
         emulate_tty=True,
         parameters=[{
-                'use_sim_time': LaunchConfiguration('use_sim_time'),
-                'port_name': LaunchConfiguration('port_name'),                
+                'use_sim_time': LaunchConfiguration('scout_use_sim_time'),
+                'port_name': LaunchConfiguration('scout_port_name'),                
                 'odom_frame': LaunchConfiguration('odom_frame'),
                 'base_frame': LaunchConfiguration('base_frame'),
                 'odom_topic_name': LaunchConfiguration('odom_topic_name'),
@@ -227,19 +229,12 @@ def generate_launch_description():
 		name="static_tf_imu",
 		arguments=['0.36','0.0','0.0','0.0','0.0','0.0','base_link','imu_link']
 	)
-	
-    static_base_color = Node(
+
+    static_base_camera = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
-		name="static_tf_color",
-		arguments=['0.285','0.075','0.0','0.0','0.0','0.0','base_link','camera_color_optical_frame']
-	)
-	
-    static_base_depth = Node(
-		package="tf2_ros",
-		executable="static_transform_publisher",
-		name="static_tf_depth",
-		arguments=['0.285','0.075','0.0','0.0','0.0','0.0','base_link','camera_depth_optical_frame']
+		name="static_tf_camera",
+		arguments=['0.285','0.075','0.0','0.0','0.0','0.0','base_link','camera_link']
 	)
 	
     static_base_gnss = Node(
@@ -253,25 +248,28 @@ def generate_launch_description():
 		package="robot_localization",
 		executable="ekf_node",
 		name='ekf_filter_node_fused',
-		parameters=[{PythonExpression(['"ekf_filter_node_fused_" + "', LaunchConfiguration('tag_frame'), '"']): ""}, LaunchConfiguration('ekf_params')],
+		parameters=[{"ekf_filter_node_odom": ""}, DUAL_EKF_PARAMS],
 		remappings=[('odometry/filtered', 'scout/odom_filtered')]
 	)
+
+    navsat_node_ = Node(
+            package='robot_localization',
+            executable='navsat_transform_node',
+            name='navsat_transform',
+            output='screen',
+            parameters=[{"navsat_transform": ""}, DUAL_EKF_PARAMS],
+            remappings=[('odometry/filtered', 'scout/odom_filtered'),
+						('gps/fix', '/ublox_gps_node/fix'),
+						('/imu', '/imu/data')]
+    )
 	
     ekf_filter_node_map = Node(
 		package="robot_localization",
 		executable="ekf_node",
 		name='ekf_filter_node_map',
-		parameters=[{PythonExpression(['"ekf_filter_node_map_" + "', LaunchConfiguration('tag_frame'), '"']): ""}, LaunchConfiguration('ekf_params')],
+		parameters=[{"ekf_filter_node_map": ""}, DUAL_EKF_PARAMS],
 		remappings=[('odometry/filtered', 'scout/map')]
 	)
-	
-    navsat_node_ = Node(
-            package='robot_localization',
-            executable='navsat_transform_node',
-            name='navsat_transform_node',
-            output='screen',
-            parameters=[os.path.join(get_package_share_directory("robot_localization"), 'params', 'navsat_transform.yaml')],
-    )
 	
     tag1_ekf_launch = IncludeLaunchDescription(
             launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'tag_ekf.launch.py'),
@@ -316,13 +314,15 @@ def generate_launch_description():
         #static_uwb_3,
         #static_uwb_4,
         static_base_imu,
-        static_base_color,
-        static_base_depth,
+        static_base_camera,
         static_base_gnss,
         ublox_gps_node,
         umx_driver_node,
         baselink_transformer,
         realsense_launch,
+        ekf_filter_node_fused,
+        navsat_node_,
+        ekf_filter_node_map,
         #uwb_rcv_node,
         #tag1_ekf_launch,
         #tag2_ekf_launch,
