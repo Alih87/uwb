@@ -53,12 +53,12 @@ bt_navigator:
     introspection_mode: "disabled"
     navigators: ["navigate_to_pose", "navigate_through_poses"]
     navigate_to_pose:
-      plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
+      plugin: "nav2_bt_navigator/NavigateToPoseNavigator"
       enable_groot_monitoring: false
       groot_server_port: 1667
       search_window: 2.0
     navigate_through_poses:
-      plugin: "nav2_bt_navigator::NavigateThroughPosesNavigator"
+      plugin: "nav2_bt_navigator/NavigateThroughPosesNavigator"
       enable_groot_monitoring: false
       groot_server_port: 1669
       search_window: 2.0
@@ -391,7 +391,7 @@ planner_server:
     costmap_update_timeout: 1.0
     introspection_mode: "disabled"
     GridBased:
-      plugin: "nav2_navfn_planner::NavfnPlanner"
+      plugin: "nav2_navfn_planner/NavfnPlanner"
       tolerance: 0.5
       use_astar: false
       allow_unknown: true
@@ -426,21 +426,21 @@ behavior_server:
     behavior_plugins:
       ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
     spin:
-      plugin: "nav2_behaviors::Spin"
+      plugin: "nav2_behaviors/Spin"
     backup:
-      plugin: "nav2_behaviors::BackUp"
+      plugin: "nav2_behaviors/BackUp"
       acceleration_limit: 2.5
       deceleration_limit: -2.5
       minimum_speed: 0.10
     drive_on_heading:
-      plugin: "nav2_behaviors::DriveOnHeading"
+      plugin: "nav2_behaviors/DriveOnHeading"
       acceleration_limit: 2.5
       deceleration_limit: -2.5
       minimum_speed: 0.10
     wait:
-      plugin: "nav2_behaviors::Wait"
+      plugin: "nav2_behaviors/Wait"
     assisted_teleop:
-      plugin: "nav2_behaviors::AssistedTeleop"
+      plugin: "nav2_behaviors/AssistedTeleop"
     local_frame: odom
     global_frame: map
     robot_base_frame: base_link

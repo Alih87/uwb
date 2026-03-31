@@ -129,6 +129,10 @@ def generate_launch_description():
 			'use_composition': "False"
 		}.items()
 	)
+    delayed_nav2 = TimerAction(
+		period=12.0,
+		actions=[nav2_bringup_launch]
+	)
     
     baselink_transformer = Node(
 		package='imu_transformer',
@@ -336,7 +340,7 @@ def generate_launch_description():
                 'imu_params': IMU_PARAMS_TAG2
             }.items()
         )
-	
+        
     delayed_scout = TimerAction(
 		period=7.0,
 		actions=[scout_base_node]
@@ -359,7 +363,7 @@ def generate_launch_description():
         ekf_filter_node_fused,
         navsat_node_,
         ekf_filter_node_map,
-        nav2_bringup_launch,
+        delayed_nav2,
         #uwb_rcv_node,
         #tag1_ekf_launch,
         #tag2_ekf_launch,
