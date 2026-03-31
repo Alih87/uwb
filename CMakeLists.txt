@@ -10,7 +10,10 @@ find_package(ament_cmake REQUIRED)
 find_package(serial REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(rclcpp_action REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
@@ -39,11 +42,15 @@ ament_target_dependencies(ekf_tf rclcpp std_msgs nav_msgs sensor_msgs tf2_ros tf
 add_executable(dynamic_tf_pub src/dynamic_transforms_pub.cpp)
 ament_target_dependencies(dynamic_tf_pub rclcpp std_msgs nav_msgs tf2_ros serial)
 
+add_executable(n2p src/nav2_pose_publisher.cpp)
+ament_target_dependencies(n2p rclcpp rclcpp_action nav2_msgs geometry_msgs)
+
 target_link_libraries(uwb_node serial)
 target_link_libraries(uwb_rcv serial)
 target_link_libraries(uwb_tf serial)
 target_link_libraries(ekf_tf serial)
 target_link_libraries(dynamic_tf_pub serial)
+target_link_libraries(n2p)
 
 install(TARGETS uwb_node
 DESTINATION lib/${PROJECT_NAME}
@@ -62,6 +69,10 @@ DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS dynamic_tf_pub
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS n2p
 DESTINATION lib/${PROJECT_NAME}
 )
 

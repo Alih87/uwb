@@ -369,5 +369,5 @@ def generate_launch_description():
         #tag2_ekf_launch,
         #rplidar_ros_node,
         #rviz2_lidar_node,
-        #rviz2_node
+        rviz2_node
     ])
