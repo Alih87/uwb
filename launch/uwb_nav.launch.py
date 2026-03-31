@@ -31,6 +31,7 @@ DUAL_EKF_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uw
 DUAL_EKF_PARAMS_TAG2 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_tag2.yaml')
 IMU_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'imu_filter_tag1.yaml')
 IMU_PARAMS_TAG2 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'imu_filter_tag2.yaml')
+NAV2_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'nav2_params.yaml')
 
 def generate_launch_description():
     # --- Launch configurations ---
@@ -41,8 +42,14 @@ def generate_launch_description():
     rplidar_inverted = LaunchConfiguration('rplidar_inverted')
     rplidar_angle_compensate = LaunchConfiguration('rplidar_angle_compensate')
     rplidar_scan_mode = LaunchConfiguration('rplidar_scan_mode')
+    
+    
+    nav2_use_sim_time = LaunchConfiguration('nav2_use_sim_time')
+    nav2_params_file = LaunchConfiguration('nav2_params_file')
+    nav2_autostart = LaunchConfiguration('nav2_autostart')
 
     # --- Declare arguments ---
+    # rplidar parameters
     declare_args = [
         DeclareLaunchArgument('rplidar_channel_type', default_value='serial',
                               description='Specifying channel type of lidar'),
@@ -84,6 +91,11 @@ def generate_launch_description():
 													   description='Whether running with simulator'),
 		DeclareLaunchArgument('control_rate', default_value='30',
 													 description='Simulation control loop update rate'),
+													 
+	# Navigation2 parameters												 
+		DeclareLaunchArgument('nav2_use_sim_time', default_value='false'),
+        DeclareLaunchArgument('nav2_autostart', default_value='true'),
+        DeclareLaunchArgument('nav2_params_file', default_value=NAV2_PARAMS),
     ]
 
     # --- RViz config file ---
@@ -91,7 +103,6 @@ def generate_launch_description():
         get_package_share_directory('rplidar_ros'),
         'rviz',
         'rplidar_ros.rviz')
-
     # --- Nodes ---
     rplidar_ros_node = Node(
         package='rplidar_ros',
@@ -108,6 +119,16 @@ def generate_launch_description():
         }],
         output='screen'
     )
+    
+    nav2_bringup_launch = IncludeLaunchDescription(
+		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'navigation_uwb_launch.py'),
+		launch_arguments={
+			'use_sim_time': nav2_use_sim_time,
+			'params_file': nav2_params_file,
+			'autostart': nav2_autostart,
+			'use_composition': "False"
+		}.items()
+	)
     
     baselink_transformer = Node(
 		package='imu_transformer',
@@ -166,8 +187,7 @@ def generate_launch_description():
         get_package_share_directory('uwb_test'),
         'config',
         'rviz2_config_.rviz'
-    )
-    
+    )   
     rviz2_node = Node(
         package='rviz2',
         executable='rviz2',
@@ -250,7 +270,7 @@ def generate_launch_description():
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_tf_camera",
-		arguments=['0.285','0.075','0.0','0.0','0.0','0.0','base_link','camera_link']
+		arguments=['0.285','-0.075','0.0','0.0','0.0','0.0','base_link','camera_link']
 	)
 	
     static_base_gnss = Node(
@@ -339,10 +359,11 @@ def generate_launch_description():
         ekf_filter_node_fused,
         navsat_node_,
         ekf_filter_node_map,
+        nav2_bringup_launch,
         #uwb_rcv_node,
         #tag1_ekf_launch,
         #tag2_ekf_launch,
         #rplidar_ros_node,
         #rviz2_lidar_node,
-        rviz2_node
+        #rviz2_node
     ])
