@@ -24,9 +24,10 @@ DYNAMIC_ANCHORS = {
 tag_1 = "tag1"
 tag_2 = "tag2"
 
-aux_frame = "map_uwb"
+aux_frame = "utm"
 
 DUAL_EKF_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_uwb.yaml')
+DUAL_EKF_NAVSAT_PARAMS = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'navsat_transform_uwb.yaml')
 DUAL_EKF_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_tag1.yaml')
 DUAL_EKF_PARAMS_TAG2 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'dual_ekf_navsat_tag2.yaml')
 IMU_PARAMS_TAG1 = os.path.join(os.path.join(get_package_share_directory('uwb_test'),'params'),'imu_filter_tag1.yaml')
@@ -233,7 +234,7 @@ def generate_launch_description():
     ublox_gps_node = Node(package='ublox_gps',
 							 executable='ublox_gps_node',
 							 output='screen',
-							 parameters=[params])
+							 parameters=[params], respawn=True, respawn_delay=2.0)
     
     static_map_odom = Node(
 		package="tf2_ros",
@@ -295,9 +296,9 @@ def generate_launch_description():
     navsat_node_ = Node(
             package='robot_localization',
             executable='navsat_transform_node',
-            name='navsat_transform',
+            name='navsat_transform_node',
             output='screen',
-            parameters=[{"navsat_transform": ""}, DUAL_EKF_PARAMS],
+            parameters=[DUAL_EKF_NAVSAT_PARAMS],
             remappings=[('odometry/filtered', 'scout/odom_filtered'),
 						('gps/fix', '/ublox_gps_node/fix'),
 						('/imu', '/imu/data')]
