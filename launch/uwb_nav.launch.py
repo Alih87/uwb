@@ -289,6 +289,10 @@ def generate_launch_description():
 		name="static_tf_gnss",
 		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','base_link','gps']
 	)
+	
+    local_mapping_node = IncludeLaunchDescription(
+		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'create_map_rtab.launch.py'),
+	)
 
     ekf_filter_node_fused = Node(
 		package="robot_localization",
@@ -367,13 +371,14 @@ def generate_launch_description():
         baselink_transformer,
         realsense_launch,
         ekf_filter_node_fused,
-        navsat_node_,
-        ekf_filter_node_map,
+        #navsat_node_,
+        #ekf_filter_node_map,
         #delayed_nav2,
         #uwb_rcv_node,
         #tag1_ekf_launch,
         #tag2_ekf_launch,
         #rplidar_ros_node,
         #rviz2_lidar_node,
+        local_mapping_node,
         rviz2_node
     ])
