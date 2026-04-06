@@ -263,12 +263,17 @@ def generate_launch_description():
 		name="static_uwb_4",
 		arguments=[STATIC_ANCHORS['anc4'][0],STATIC_ANCHORS['anc4'][1],'0.0','0.0','0.0','0.0',aux_frame,'static_uwb_4']
 	)
-	
+
     static_base_imu = Node(
-		package="tf2_ros",
-		executable="static_transform_publisher",
-		name="static_tf_imu",
-		arguments=['0.36','0.0','0.0','0.0','0.0','0.0','base_link','imu_link']
+		package='tf2_ros',
+		executable='static_transform_publisher',
+		name='static_tf_imu',
+		arguments=[
+			'--x', '-0.36', '--y', '0.0', '--z', '0.0',
+			'--qx', '0.70710678', '--qy', '0.70710678', '--qz', '0', '--qw', '0',
+			'--frame-id', 'base_link',
+			'--child-frame-id', 'imu_link',
+		],
 	)
 
     static_base_camera = Node(
@@ -364,7 +369,7 @@ def generate_launch_description():
         ekf_filter_node_fused,
         navsat_node_,
         ekf_filter_node_map,
-        delayed_nav2,
+        #delayed_nav2,
         #uwb_rcv_node,
         #tag1_ekf_launch,
         #tag2_ekf_launch,
