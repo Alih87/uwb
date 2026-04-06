@@ -269,8 +269,8 @@ def generate_launch_description():
 		executable='static_transform_publisher',
 		name='static_tf_imu',
 		arguments=[
-			'--x', '-0.36', '--y', '0.0', '--z', '0.0',
-			'--qx', '0.70710678', '--qy', '0.70710678', '--qz', '0', '--qw', '0',
+			'--x', '0.36', '--y', '0.0', '--z', '0.0',
+			'--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1',
 			'--frame-id', 'base_link',
 			'--child-frame-id', 'imu_link',
 		],
