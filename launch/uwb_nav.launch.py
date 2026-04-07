@@ -293,6 +293,10 @@ def generate_launch_description():
     local_mapping_node = IncludeLaunchDescription(
 		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'create_map_rtab.launch.py'),
 	)
+	
+    map_loader_node = IncludeLaunchDescription(
+		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'load_map_rtab.launch.py'),
+	)
 
     ekf_filter_node_fused = Node(
 		package="robot_localization",
@@ -379,6 +383,7 @@ def generate_launch_description():
         #tag2_ekf_launch,
         #rplidar_ros_node,
         #rviz2_lidar_node,
-        local_mapping_node,
+        #local_mapping_node,	# Uncomment when creating map, comment map_loader_node
+        map_loader_node,		# Uncomment when loading map, comment local_mapping_node
         rviz2_node
     ])

@@ -23,11 +23,14 @@ def generate_launch_description():
             package='rtabmap_slam', executable='rtabmap', output='screen',
             parameters=[slam_parameters,
             {
-            'delete_db_on_start': True,
-            'Mem/IncrementalMemory': 'True',
-            'database_path': os.path.join(os.path.join(get_package_share_directory('uwb_test'),'config'),'rtab_map1.db')
-				}
-			],
+            'database_path': os.path.join(os.path.join(get_package_share_directory('uwb_test'),'config'),'rtab_map1.db'),
+            'Mem/IncrementalMemory': 'False',
+			'Mem/InitWMWithAllNodes': 'True',
+			'frame_id': 'base_link',
+			'odom_frame_id': 'odom',
+			'publish_tf': True
+			}
+				],
             remappings=slam_remappings)
           
     return LaunchDescription([
