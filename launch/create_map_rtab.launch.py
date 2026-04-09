@@ -25,7 +25,12 @@ def generate_launch_description():
             {
             'delete_db_on_start': True,
             'Mem/IncrementalMemory': 'True',
-            'database_path': os.path.join(os.path.join(get_package_share_directory('uwb_test'),'config'),'rtab_map1.db')
+            'subscribe_depth': True,
+            'subscribe_scan': False,
+			'Grid/Sensor': '1',
+			'Grid/RangeMin': '0.2',
+			'Grid/RangeMax': '5',
+            'database_path': os.path.join(os.path.join(get_package_share_directory('uwb_test'),'config'),'rtab_map_corridor.db')
 				}
 			],
             remappings=slam_remappings)

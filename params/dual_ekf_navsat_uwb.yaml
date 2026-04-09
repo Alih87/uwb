@@ -2,9 +2,10 @@
 
 ekf_filter_node_fused:
   ros__parameters:
-    frequency: 6.0
-    sensor_timeout: 0.3
+    frequency: 15.0
+    sensor_timeout: 0.2
     two_d_mode: true
+    dynamic_process_noise_covariance: true
     transform_time_offset: 0.0
     transform_timeout: 0.0
     print_diagnostics: true
@@ -12,6 +13,7 @@ ekf_filter_node_fused:
     publish_tf: true
     publish_acceleration: false
     
+    map_frame: map
     odom_frame: odom
     base_link_frame: base_link
     world_frame: odom
@@ -29,10 +31,10 @@ ekf_filter_node_fused:
 
     imu0: imu/data
     imu0_config: [false, false, false,
-              false, false, true,
-              false, false, false,
-              false, false, true,
-              false, false, false]
+                 false, false, false,
+                 false, false, false,
+                 false, false, true,
+                 false, false, false]
     imu0_nodelay: true
     imu0_differential: false
     imu0_relative: false
@@ -46,13 +48,13 @@ ekf_filter_node_fused:
                               0.0,    0.0,    1e-3,   0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.3,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.3,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                              0.0,    0.0,    0.0,    0.0,    0.0,    0.01,   0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    1e-3,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
-                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     1e-3,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                              0.0,    0.0,    0.0,    0.0,    0.0,    0.05,   0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.03,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
+                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.03,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.1,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.3,    0.0,    0.0,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.3,    0.0,    0.0,    0.0,    0.0,
-                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.3,    0.0,    0.0,    0.0,
+                              0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.12,    0.0,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    1e-3,    0.0,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    1e-3,    0.0,
                               0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.0,     0.0,     0.0,    0.0,    0.0,    0.0,    0.0,    0.0,    0.3]
