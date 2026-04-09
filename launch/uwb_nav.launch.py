@@ -269,7 +269,7 @@ def generate_launch_description():
 		executable='static_transform_publisher',
 		name='static_tf_imu',
 		arguments=[
-			'--x', '0.36', '--y', '0.0', '--z', '0.0',
+			'--x', '0.26', '--y', '0.0', '--z', '0.0',
 			'--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1',
 			'--frame-id', 'base_link',
 			'--child-frame-id', 'imu_link',
@@ -280,7 +280,7 @@ def generate_launch_description():
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_tf_camera",
-		arguments=['0.285','-0.075','0.0','0.0','0.0','0.0','base_link','camera_link']
+		arguments=['0.33','-0.048','0.0','0.0','0.0','0.0','base_link','camera_link']
 	)
 	
     static_base_gnss = Node(
@@ -375,15 +375,15 @@ def generate_launch_description():
         baselink_transformer,
         realsense_launch,
         ekf_filter_node_fused,
-        #navsat_node_,
-        #ekf_filter_node_map,
-        #delayed_nav2,
+        #navsat_node_,			# Uncomment for GNSS localization
+        #ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
+        delayed_nav2,
         #uwb_rcv_node,
         #tag1_ekf_launch,
         #tag2_ekf_launch,
         #rplidar_ros_node,
         #rviz2_lidar_node,
         #local_mapping_node,	# Uncomment when creating map, comment map_loader_node
-        map_loader_node,		# Uncomment when loading map, comment local_mapping_node
+        map_loader_node,		# Uncomment when loading map, comment local_mapping_node (Comment navsat_node_ and ekf_filter_node_map)
         rviz2_node
     ])
