@@ -7,7 +7,7 @@ import os
 def generate_launch_description():
 	
     slam_parameters={
-          'frame_id':'camera_link',
+          'frame_id':'base_link',
           'subscribe_depth':True,
           'subscribe_odom_info':False,
           'approx_sync':True}
@@ -25,9 +25,17 @@ def generate_launch_description():
             {
             'subscribe_depth': True,
             'subscribe_scan': False,
+            'queue_size': 20,
 			'Grid/Sensor': '1',
-			'Grid/RangeMin': '0.2',
-			'Grid/RangeMax': '5',
+			'Grid/DepthDecimation': '4',
+			'Grid/CellSize': '0.05',
+			'Grid/3D': 'false',
+			'Grid/RangeMin': '0.3',
+			'Grid/RangeMax': '4.0',
+			'RGBD/LinearUpdate': '0.05',
+			'RGBD/AngularUpdate': '0.05',
+			'RGBD/OptimizeMaxError': '0.1',
+			'Rtabmap/DetectionRate': '2.0',
             'database_path': os.path.join(os.path.join(get_package_share_directory('uwb_test'),'config'),'rtab_map_corridor.db'),
             'Mem/IncrementalMemory': 'False',
 			'Mem/InitWMWithAllNodes': 'True',

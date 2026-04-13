@@ -175,6 +175,7 @@ def generate_launch_description():
         parameters=[{
             'enable_color': True,
             'enable_depth': True,
+            'enable_sync': True,
             'align_depth.enable': True,
             'pointcloud__neon_.enable': True,
         }],
@@ -294,6 +295,10 @@ def generate_launch_description():
 		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'create_map_rtab.launch.py'),
 	)
 	
+    map_updater_node = IncludeLaunchDescription(
+		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'update_map_rtab.launch.py'),
+	)
+	
     map_loader_node = IncludeLaunchDescription(
 		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'load_map_rtab.launch.py'),
 	)
@@ -385,5 +390,6 @@ def generate_launch_description():
         #rviz2_lidar_node,
         #local_mapping_node,	# Uncomment when creating map, comment map_loader_node
         map_loader_node,		# Uncomment when loading map, comment local_mapping_node (Comment navsat_node_ and ekf_filter_node_map)
+        #map_updater_node,
         rviz2_node
     ])
