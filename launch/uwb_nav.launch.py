@@ -374,14 +374,14 @@ def generate_launch_description():
         #static_uwb_4,
         static_base_imu,
         static_base_camera,
-        #static_base_gnss,
-        #ublox_gps_node,
+        static_base_gnss,
+        ublox_gps_node,
         umx_driver_node,
         baselink_transformer,
         realsense_launch,
         ekf_filter_node_fused,
-        #navsat_node_,			# Uncomment for GNSS localization
-        #ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
+        navsat_node_,			# Uncomment for GNSS localization
+        ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
         delayed_nav2,
         #uwb_rcv_node,
         #tag1_ekf_launch,
@@ -389,7 +389,7 @@ def generate_launch_description():
         #rplidar_ros_node,
         #rviz2_lidar_node,
         #local_mapping_node,	# Uncomment when creating map, comment map_loader_node
-        map_loader_node,		# Uncomment when loading map, comment local_mapping_node (Comment navsat_node_ and ekf_filter_node_map)
+        #map_loader_node,		# Uncomment when loading map, comment local_mapping_node (Comment navsat_node_ and ekf_filter_node_map)
         #map_updater_node,
         rviz2_node
     ])
