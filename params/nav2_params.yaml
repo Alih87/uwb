@@ -360,7 +360,7 @@ local_costmap:
           #   * Topic will be remapped to `/tb4/scan` without `local_costmap`.
           #   * Use global topic `/scan` if you do not wish the node namespace to apply
           topic: /camera/camera/depth/color/points
-          max_obstacle_height: 2.0
+          max_obstacle_height: 1.5
           clearing: true
           marking: true
           data_type: "PointCloud2"
@@ -385,7 +385,8 @@ global_costmap:
       footprint: "[[0.4625, 0.19], [0.4136, 0.3498], [-0.4136, 0.3498], [-0.4625, 0.19], [-0.4625, -0.19], [-0.4136, -0.3498], [0.4136, -0.3498], [0.4625, -0.19]]"
       resolution: 0.05
       track_unknown_space: true
-      plugins: ["static_layer", "denoise_layer", "inflation_layer"]
+      #plugins: ["static_layer", "denoise_layer", "inflation_layer"]     # For indoor navigation
+      plugins: ["obstacle_layer", "inflation_layer"]      # For GNSS navigation
       filters: ["keepout_filter", "speed_filter"]
       denoise_layer:
         plugin: "nav2_costmap_2d::DenoiseLayer"
@@ -406,23 +407,23 @@ global_costmap:
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: true
-        observation_sources: scan
-        scan:
+        observation_sources: realsense_points
+        realsense_points:
           # A relative topic will be appended to the parent of the global_costmap namespace.
           # For example:
           #   * User chosen namespace is `tb4`.
           #   * User chosen topic is `scan`.
           #   * Topic will be remapped to `/tb4/scan` without `global_costmap`.
           #   * Use global topic `/scan` if you do not wish the node namespace to apply
-          topic: scan
-          max_obstacle_height: 1.0
+          topic: /camera/camera/depth/color/points
+          max_obstacle_height: 1.5
           clearing: true
           marking: true
-          data_type: "LaserScan"
+          data_type: "PointCloud2"
           raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
+          raytrace_min_range: 0.1
           obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
+          obstacle_min_range: 0.1
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: true

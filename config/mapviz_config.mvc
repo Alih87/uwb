@@ -1,0 +1,32 @@
+capture_directory: "~"
+fixed_frame: map
+target_frame: base_link
+fix_orientation: false
+rotate_90: false
+enable_antialiasing: true
+show_displays: true
+show_status_bar: true
+show_capture_tools: true
+window_width: 1618
+window_height: 767
+view_scale: 0.098663725
+offset_x: 0.0702908337
+offset_y: 0.633969367
+use_latest_transforms: true
+background: "#a0a0a4"
+image_transport: raw
+force_720p: true
+displays:
+  - type: mapviz_plugins/tile_map
+    name: new display
+    config:
+      visible: true
+      collapsed: false
+      custom_sources:
+        - base_url: https://api.vworld.kr/req/wmts/1.0.0/ 804DD9CC-3C86-3686-BEC1-89BF37906FB2/Satellite/{level}/{y}/{x}.jpeg
+          max_zoom: 19
+          name: scout
+          type: wmts
+      bing_api_key: ""
+      stadia_api_key: ""
+      source: scout

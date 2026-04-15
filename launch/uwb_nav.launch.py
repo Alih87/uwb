@@ -302,6 +302,10 @@ def generate_launch_description():
     map_loader_node = IncludeLaunchDescription(
 		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'load_map_rtab.launch.py'),
 	)
+	
+    mapviz_launcher_node = IncludeLaunchDescription(
+		launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'mapviz_vworld.launch.py'),
+	)
 
     ekf_filter_node_fused = Node(
 		package="robot_localization",
@@ -368,6 +372,8 @@ def generate_launch_description():
     # --- Return LaunchDescription ---
     return LaunchDescription(declare_args + [
         delayed_scout,
+        
+        ## ---------Static transformers-----------
         #static_map_odom,
         #static_uwb_0,
         #static_uwb_3,
@@ -375,21 +381,32 @@ def generate_launch_description():
         static_base_imu,
         static_base_camera,
         static_base_gnss,
+        
+        ## ------------Sensors-------------
         ublox_gps_node,
         umx_driver_node,
         baselink_transformer,
         realsense_launch,
+        #uwb_rcv_node,
+        #rplidar_ros_node,
+        
+        ## --------------EKFs--------------
         ekf_filter_node_fused,
         navsat_node_,			# Uncomment for GNSS localization
         ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
-        delayed_nav2,
-        #uwb_rcv_node,
         #tag1_ekf_launch,
         #tag2_ekf_launch,
-        #rplidar_ros_node,
-        #rviz2_lidar_node,
+        
+        ## ---------Mapping----------
+        mapviz_launcher_node,
         #local_mapping_node,	# Uncomment when creating map, comment map_loader_node
         #map_loader_node,		# Uncomment when loading map, comment local_mapping_node (Comment navsat_node_ and ekf_filter_node_map)
         #map_updater_node,
-        rviz2_node
+        
+        ## -------------Nav2--------------
+        delayed_nav2,
+        
+        ## -------------Rviz--------------
+        #rviz2_lidar_node,
+        #rviz2_node
     ])
