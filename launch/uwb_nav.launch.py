@@ -270,7 +270,7 @@ def generate_launch_description():
 		executable='static_transform_publisher',
 		name='static_tf_imu',
 		arguments=[
-			'--x', '0.26', '--y', '0.0', '--z', '0.0',
+			'--x', '0.26', '--y', '0.0', '--z', '0.39',
 			'--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1',
 			'--frame-id', 'base_link',
 			'--child-frame-id', 'imu_link',
@@ -281,14 +281,14 @@ def generate_launch_description():
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_tf_camera",
-		arguments=['0.33','-0.048','0.0','0.0','0.0','0.0','base_link','camera_link']
+		arguments=['0.33','-0.048','0.39','0.0','0.0','0.0','base_link','camera_link']
 	)
 	
     static_base_gnss = Node(
 		package="tf2_ros",
 		executable="static_transform_publisher",
 		name="static_tf_gnss",
-		arguments=['0.0','0.0','0.0','0.0','0.0','0.0','base_link','gps']
+		arguments=['0.0','0.0','0.365','0.0','0.0','0.0','base_link','gps']
 	)
 	
     local_mapping_node = IncludeLaunchDescription(
@@ -332,6 +332,11 @@ def generate_launch_description():
 		name='ekf_filter_node_map',
 		parameters=[{"ekf_filter_node_map": ""}, DUAL_EKF_PARAMS],
 		remappings=[('odometry/filtered', 'scout/map')]
+	)
+	
+    delayed_ekf_filter_node_map = TimerAction(
+		period=55.0,
+		actions=[ekf_filter_node_map]
 	)
 	
     tag1_ekf_launch = IncludeLaunchDescription(
@@ -379,26 +384,26 @@ def generate_launch_description():
         #static_uwb_3,
         #static_uwb_4,
         static_base_imu,
-        static_base_camera,
+        #static_base_camera,
         static_base_gnss,
         
         ## ------------Sensors-------------
         ublox_gps_node,
         umx_driver_node,
         baselink_transformer,
-        realsense_launch,
+        #realsense_launch,
         #uwb_rcv_node,
         #rplidar_ros_node,
         
         ## --------------EKFs--------------
         ekf_filter_node_fused,
         navsat_node_,			# Uncomment for GNSS localization
-        ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
+        #delayed_ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
         #tag1_ekf_launch,
         #tag2_ekf_launch,
         
         ## ---------Mapping----------
-        mapviz_launcher_node,
+        #mapviz_launcher_node,
         #local_mapping_node,	# Uncomment when creating map, comment map_loader_node
         #map_loader_node,		# Uncomment when loading map, comment local_mapping_node (Comment navsat_node_ and ekf_filter_node_map)
         #map_updater_node,
@@ -408,5 +413,5 @@ def generate_launch_description():
         
         ## -------------Rviz--------------
         #rviz2_lidar_node,
-        #rviz2_node
+        rviz2_node
     ])
