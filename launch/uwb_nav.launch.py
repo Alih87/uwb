@@ -398,7 +398,7 @@ def generate_launch_description():
         ## --------------EKFs--------------
         ekf_filter_node_fused,
         navsat_node_,			# Uncomment for GNSS localization
-        #delayed_ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
+        delayed_ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
         #tag1_ekf_launch,
         #tag2_ekf_launch,
         
@@ -409,7 +409,7 @@ def generate_launch_description():
         #map_updater_node,
         
         ## -------------Nav2--------------
-        delayed_nav2,
+        #delayed_nav2,
         
         ## -------------Rviz--------------
         #rviz2_lidar_node,
