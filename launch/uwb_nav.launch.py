@@ -335,7 +335,7 @@ def generate_launch_description():
 	)
 	
     delayed_ekf_filter_node_map = TimerAction(
-		period=55.0,
+		period=20.0,
 		actions=[ekf_filter_node_map]
 	)
 	
