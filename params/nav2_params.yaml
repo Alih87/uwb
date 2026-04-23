@@ -269,9 +269,9 @@ local_costmap:
       global_frame: odom
       robot_base_frame: base_link
       rolling_window: true
-      width: 3
-      height: 3
-      resolution: 0.1
+      width: 7
+      height: 7
+      resolution: 0.05
       robot_radius: 0.5
       #plugins: ["voxel_layer", "inflation_layer"]\
       plugins: ["inflation_layer"]
@@ -326,7 +326,7 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       robot_radius: 0.5
-      resolution: 0.1
+      resolution: 0.05
       track_unknown_space: true
       #plugins: ["static_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
       plugins: ["inflation_layer"]

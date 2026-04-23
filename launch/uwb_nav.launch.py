@@ -409,7 +409,7 @@ def generate_launch_description():
         #map_updater_node,
         
         ## -------------Nav2--------------
-        #delayed_nav2,
+        delayed_nav2,
         
         ## -------------Rviz--------------
         #rviz2_lidar_node,
