@@ -45,7 +45,7 @@ bt_navigator:
     global_frame: map
     robot_base_frame: base_link
     odom_topic: odom
-    bt_loop_duration: 10
+    bt_loop_duration: 125
     filter_duration: 0.3
     default_server_timeout: 20
     default_cancel_timeout: 50
@@ -91,15 +91,15 @@ bt_navigator:
 
 controller_server:
   ros__parameters:
-    controller_frequency: 10.0
-    costmap_update_timeout: 0.30
+    controller_frequency: 5.0
+    costmap_update_timeout: 0.5
     min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.5
+    min_y_velocity_threshold: 0.0
     min_theta_velocity_threshold: 0.001
     failure_tolerance: 0.3
     progress_checker_plugins: ["progress_checker"]
     goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
-    controller_plugins: ["FollowPath_RPP"]
+    controller_plugins: ["FollowPath"]
     path_handler_plugins: ["PathHandler"]
     use_realtime_priority: false
     speed_limit_topic: "speed_limit"
@@ -130,7 +130,7 @@ controller_server:
       inversion_yaw_tolerance: 0.4
       minimum_rotation_angle: 0.785
       reject_unit_path: false
-    FollowPath_RPP:
+    FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
 
       desired_linear_vel: 0.4
@@ -139,7 +139,7 @@ controller_server:
       max_lookahead_dist: 0.9
       lookahead_time: 1.5
 
-      rotate_to_heading_angular_vel: 0.6
+      rotate_to_heading_angular_vel: 0.3
       transform_tolerance: 0.2
       use_velocity_scaled_lookahead_dist: true
       min_approach_linear_velocity: 0.05
@@ -159,7 +159,7 @@ controller_server:
 
       allow_reversing: false
       interpolate_curvature_after_goal: false
-    FollowPath:
+    FollowPath_MPPI:
       plugin: "nav2_mppi_controller::MPPIController"
       time_steps: 56
       model_dt: 0.1
@@ -269,23 +269,23 @@ local_costmap:
       global_frame: odom
       robot_base_frame: base_link
       rolling_window: true
-      width: 7
-      height: 7
+      width: 6
+      height: 6
       resolution: 0.05
       robot_radius: 0.5
       #plugins: ["voxel_layer", "inflation_layer"]\
       plugins: ["inflation_layer"]
-      filters: ["keepout_filter"]
-      keepout_filter:
-        plugin: "nav2_costmap_2d::KeepoutFilter"
-        enabled: KEEPOUT_ZONE_ENABLED
-        filter_info_topic: "keepout_costmap_filter_info"
-        override_lethal_cost: true
-        lethal_override_cost: 200
+      #filters: ["keepout_filter"]
+      #keepout_filter:
+      #  plugin: "nav2_costmap_2d::KeepoutFilter"
+      #  enabled: KEEPOUT_ZONE_ENABLED
+      #  filter_info_topic: "keepout_costmap_filter_info"
+      #  override_lethal_cost: true
+      #  lethal_override_cost: 200
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 15.0
-        inflation_radius: 0.25
+        cost_scaling_factor: 16.0
+        inflation_radius: 0.10
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: true
@@ -323,30 +323,33 @@ global_costmap:
     ros__parameters:
       update_frequency: 1.0
       publish_frequency: 1.0
+      rolling_window: true
+      width: 50
+      height: 50
       global_frame: map
       robot_base_frame: base_link
       robot_radius: 0.5
-      resolution: 0.05
+      resolution: 0.1
       track_unknown_space: true
       #plugins: ["static_layer", "obstacle_layer", "denoise_layer", "inflation_layer"]
       plugins: ["inflation_layer"]
-      filters: ["keepout_filter", "speed_filter"]
+      #filters: ["keepout_filter", "speed_filter"]
       denoise_layer:
         plugin: "nav2_costmap_2d::DenoiseLayer"
         enabled: true
         minimal_group_size: 2
         group_connectivity_type: 8
-      keepout_filter:
-        plugin: "nav2_costmap_2d::KeepoutFilter"
-        enabled: KEEPOUT_ZONE_ENABLED
-        filter_info_topic: "keepout_costmap_filter_info"
-        override_lethal_cost: true
-        lethal_override_cost: 200
-      speed_filter:
-        plugin: "nav2_costmap_2d::SpeedFilter"
-        enabled: SPEED_ZONE_ENABLED
-        filter_info_topic: "speed_costmap_filter_info"
-        speed_limit_topic: "speed_limit"
+      #keepout_filter:
+      #  plugin: "nav2_costmap_2d::KeepoutFilter"
+      #  enabled: KEEPOUT_ZONE_ENABLED
+      #  filter_info_topic: "keepout_costmap_filter_info"
+      #  override_lethal_cost: true
+      #  lethal_override_cost: 200
+      #speed_filter:
+      #  plugin: "nav2_costmap_2d::SpeedFilter"
+      #  enabled: SPEED_ZONE_ENABLED
+      #  filter_info_topic: "speed_costmap_filter_info"
+      #  speed_limit_topic: "speed_limit"
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: false
@@ -372,8 +375,8 @@ global_costmap:
         map_subscribe_transient_local: true
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 9.0
-        inflation_radius: 0.075
+        cost_scaling_factor: 16.0
+        inflation_radius: 0.10
       always_send_full_costmap: true
       introspection_mode: "disabled"
 
@@ -422,7 +425,7 @@ map_saver:
 planner_server:
   ros__parameters:
     allow_partial_planning: false
-    expected_planner_frequency: 10.0
+    expected_planner_frequency: 8.0
     planner_plugins: ["GridBased"]
     costmap_update_timeout: 1.0
     introspection_mode: "disabled"
@@ -488,14 +491,14 @@ behavior_server:
 
 waypoint_follower:
   ros__parameters:
-    loop_rate: 20
+    loop_rate: 8
     stop_on_failure: false
     introspection_mode: "disabled"
     waypoint_task_executor_plugin: "wait_at_waypoint"
     wait_at_waypoint:
       plugin: "nav2_waypoint_follower::WaitAtWaypoint"
       enabled: true
-      waypoint_pause_duration: 20
+      waypoint_pause_duration: 4
 
 route_server:
   ros__parameters:
@@ -537,7 +540,7 @@ velocity_smoother:
 collision_monitor:
   ros__parameters:
     enabled: true
-    base_frame_id: "base_footprint"
+    base_frame_id: "base_link"
     odom_frame_id: "odom"
     cmd_vel_in_topic: "cmd_vel_smoothed"
     cmd_vel_out_topic: "cmd_vel"

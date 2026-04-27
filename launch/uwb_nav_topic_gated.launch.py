@@ -313,13 +313,11 @@ def generate_launch_description():
         static_base_imu,
         static_base_gnss,
 
-        # Flaky hardware comes up first and gets unlimited time to stabilize.
         scout_base_node,
         ublox_gps_node,
         umx_driver_node,
         baselink_transformer,
 
-        # Optional extras from your original file; keep commented unless needed.
         # rplidar_ros_node,
         # uwb_rcv_node,
         # realsense_launch,
@@ -364,8 +362,7 @@ def generate_launch_description():
                 on_exit=[
                     LogInfo(msg="[stage] global EKF stable -> starting RViz"),
                     rviz2_node,
-                    # Uncomment if you want Nav2 only after global EKF is stable.
-                    # nav2_bringup_launch,
+                    nav2_bringup_launch,
                 ],
             )
         ),
