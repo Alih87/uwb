@@ -219,7 +219,7 @@ def generate_launch_description():
     )
 
     ublox_config_directory = os.path.join(get_package_share_directory("ublox_gps"), "config")
-    ublox_params = os.path.join(ublox_config_directory, "zed_f9p.yaml")
+    ublox_params = os.path.join(get_package_share_directory("ublox_gps"), "params", "zed_f9p.yaml")
     ublox_gps_node = Node(
         package="ublox_gps",
         executable="ublox_gps_node",
@@ -361,7 +361,7 @@ def generate_launch_description():
                 target_action=gate_global_ekf,
                 on_exit=[
                     LogInfo(msg="[stage] global EKF stable -> starting RViz"),
-                    rviz2_node,
+                    #rviz2_node,
                     nav2_bringup_launch,
                 ],
             )

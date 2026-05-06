@@ -376,7 +376,7 @@ def generate_launch_description():
 
     # --- Return LaunchDescription ---
     return LaunchDescription(declare_args + [
-        delayed_scout,
+        #delayed_scout,
         
         ## ---------Static transformers-----------
         #static_map_odom,
@@ -389,16 +389,16 @@ def generate_launch_description():
         
         ## ------------Sensors-------------
         ublox_gps_node,
-        umx_driver_node,
-        baselink_transformer,
+        #umx_driver_node,
+        #baselink_transformer,
         #realsense_launch,
         #uwb_rcv_node,
         #rplidar_ros_node,
         
         ## --------------EKFs--------------
-        ekf_filter_node_fused,
-        navsat_node_,			# Uncomment for GNSS localization
-        delayed_ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
+        #ekf_filter_node_fused,
+        #navsat_node_,			# Uncomment for GNSS localization
+        #delayed_ekf_filter_node_map,	# Uncomment for GNSS localization (Comment map_loader_node and local_mapping_node)
         #tag1_ekf_launch,
         #tag2_ekf_launch,
         
@@ -409,9 +409,9 @@ def generate_launch_description():
         #map_updater_node,
         
         ## -------------Nav2--------------
-        delayed_nav2,
+        #delayed_nav2,
         
         ## -------------Rviz--------------
         #rviz2_lidar_node,
-        rviz2_node
+        #rviz2_node
     ])

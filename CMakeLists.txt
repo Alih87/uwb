@@ -19,6 +19,8 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(example_interfaces REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_ros REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -43,7 +45,7 @@ add_executable(dynamic_tf_pub src/dynamic_transforms_pub.cpp)
 ament_target_dependencies(dynamic_tf_pub rclcpp std_msgs nav_msgs tf2_ros serial)
 
 add_executable(n2p src/nav2_pose_publisher.cpp)
-ament_target_dependencies(n2p rclcpp rclcpp_action nav2_msgs geometry_msgs)
+ament_target_dependencies(n2p rclcpp rclcpp_action tf2_ros tf2_geometry_msgs nav2_msgs geometry_msgs)
 
 target_link_libraries(uwb_node serial)
 target_link_libraries(uwb_rcv serial)
