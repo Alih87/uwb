@@ -28,13 +28,14 @@ DYNAMIC_ANCHORS = {
 
 tag_1 = "tag1"
 tag_2 = "tag2"
-aux_frame = "utm"
+aux_frame = "uwb"
 
 THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 WAIT_SCRIPT = os.path.join(THIS_DIR, "wait_for_topics.py")
 
 DUAL_EKF_PARAMS = os.path.join(get_package_share_directory("uwb_test"), "params", "dual_ekf_navsat_uwb.yaml")
 DUAL_EKF_NAVSAT_PARAMS = os.path.join(get_package_share_directory("uwb_test"), "params", "navsat_transform_uwb.yaml")
+DUAL_EKF_PARAMS_TAG = os.path.join(get_package_share_directory("uwb_test"), "params", "dual_ekf_navsat_tag.yaml")
 DUAL_EKF_PARAMS_TAG1 = os.path.join(get_package_share_directory("uwb_test"), "params", "dual_ekf_navsat_tag1.yaml")
 DUAL_EKF_PARAMS_TAG2 = os.path.join(get_package_share_directory("uwb_test"), "params", "dual_ekf_navsat_tag2.yaml")
 IMU_PARAMS_TAG1 = os.path.join(get_package_share_directory("uwb_test"), "params", "imu_filter_tag1.yaml")
@@ -150,11 +151,10 @@ def generate_launch_description():
         respawn_delay=3.0,
     )
 
-    uwb_rcv_node = Node(
+    uwb_rcv_single_node = Node(
         package="uwb_test",
         executable="uwb_rcv",
-        name="uwb_rcv",
-        parameters=[{"tag1": tag_1, "tag2": tag_2}],
+        name="uwb_rcv_single",
         output="screen",
     )
 
@@ -228,6 +228,25 @@ def generate_launch_description():
         respawn=True,
         respawn_delay=3.0,
     )
+    
+    static_base_camera = Node(
+		package="tf2_ros",
+		executable="static_transform_publisher",
+		name="static_tf_camera",
+		arguments=['0.33','-0.048','0.39','0.0','0.0','0.0','base_link','camera_link']
+	)
+    
+    static_base_tag = Node(
+		package='tf2_ros',
+		executable='static_transform_publisher',
+		name='static_tf_tag',
+		arguments=[
+			'--x', '0.39', '--y', '0.025', '--z', '0.33',
+			'--qx', '0', '--qy', '0', '--qz', '0', '--qw', '1',
+			'--frame-id', 'base_link',
+			'--child-frame-id', 'tag_link',
+		],
+	)
 
     static_base_imu = Node(
         package="tf2_ros",
@@ -247,6 +266,20 @@ def generate_launch_description():
         name="static_tf_gnss",
         arguments=["0.0", "0.0", "0.365", "0.0", "0.0", "0.0", "base_link", "gps"],
     )
+    
+    tag_ekf_launch = IncludeLaunchDescription(
+            launch_description_source=os.path.join(os.path.join(get_package_share_directory('uwb_test'),'launch'),'tag_ekf.launch.py'),
+            launch_arguments={
+                'anc0': STATIC_ANCHORS['anc0'][0]+","+STATIC_ANCHORS['anc0'][1],
+                'anc1': DYNAMIC_ANCHORS['anc1'][0]+","+DYNAMIC_ANCHORS['anc1'][1],
+                'anc2': DYNAMIC_ANCHORS['anc2'][0]+","+DYNAMIC_ANCHORS['anc2'][1],
+                'anc3': STATIC_ANCHORS['anc3'][0]+","+STATIC_ANCHORS['anc3'][1],
+                'anc4': STATIC_ANCHORS['anc4'][0]+","+STATIC_ANCHORS['anc4'][1],
+                'tag_frame': "",
+                'aux_frame': aux_frame,
+                'ekf_params': DUAL_EKF_PARAMS_TAG
+            }.items()
+        )
 
     ekf_filter_node_fused = Node(
         package="robot_localization",
@@ -312,6 +345,8 @@ def generate_launch_description():
         # Static TFs
         static_base_imu,
         static_base_gnss,
+        static_base_camera,
+        static_base_tag,
 
         scout_base_node,
         ublox_gps_node,
@@ -319,7 +354,8 @@ def generate_launch_description():
         baselink_transformer,
 
         # rplidar_ros_node,
-        # uwb_rcv_node,
+        uwb_rcv_single_node,
+        tag_ekf_launch,
         # realsense_launch,
         # dynamic_tf_node,
 

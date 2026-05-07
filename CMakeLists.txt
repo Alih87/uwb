@@ -21,7 +21,9 @@ find_package(Eigen3 REQUIRED)
 find_package(example_interfaces REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(pcl_ros REQUIRED)
-
+find_package(cv_bridge REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common segmentation filters)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -35,6 +37,9 @@ ament_target_dependencies(uwb_node rclcpp std_msgs serial example_interfaces)
 add_executable(uwb_rcv src/UWBReceiver.cpp)
 ament_target_dependencies(uwb_rcv rclcpp std_msgs sensor_msgs serial example_interfaces)
 
+add_executable(uwb_rcv_single src/UWBReceiver_single.cpp)
+ament_target_dependencies(uwb_rcv_single rclcpp std_msgs sensor_msgs serial example_interfaces)
+
 add_executable(uwb_tf src/uwb_transform.cpp)
 ament_target_dependencies(uwb_tf rclcpp std_msgs nav_msgs tf2_ros tf2_geometry_msgs serial Eigen3 example_interfaces)
 
@@ -47,18 +52,31 @@ ament_target_dependencies(dynamic_tf_pub rclcpp std_msgs nav_msgs tf2_ros serial
 add_executable(n2p src/nav2_pose_publisher.cpp)
 ament_target_dependencies(n2p rclcpp rclcpp_action tf2_ros tf2_geometry_msgs nav2_msgs geometry_msgs)
 
+add_executable(ransac_ src/ransac_plane.cpp)
+ament_target_dependencies(ransac_ rclcpp std_msgs geometry_msgs sensor_msgs cv_bridge visualization_msgs pcl_ros)
+
 target_link_libraries(uwb_node serial)
 target_link_libraries(uwb_rcv serial)
+target_link_libraries(uwb_rcv_single serial)
 target_link_libraries(uwb_tf serial)
 target_link_libraries(ekf_tf serial)
 target_link_libraries(dynamic_tf_pub serial)
 target_link_libraries(n2p)
+target_link_libraries(ransac_)
+
+target_link_libraries(ransac_
+  ${PCL_LIBRARIES}
+)
 
 install(TARGETS uwb_node
 DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS uwb_rcv
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS uwb_rcv_single
 DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -75,6 +93,10 @@ DESTINATION lib/${PROJECT_NAME}
 )
 
 install(TARGETS n2p
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(TARGETS ransac_
 DESTINATION lib/${PROJECT_NAME}
 )
 

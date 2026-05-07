@@ -64,25 +64,25 @@ class UWBTransform : public rclcpp::Node {
 			auto sum_y = std::make_shared<double>(0.0);
 			auto count = std::make_shared<size_t>(0);
 			
-			for (const auto& [x,y] : *dynamic_points) {
-				if (x == 0.0 && y == 0.0) {
-					continue;
-					} else {
-						*sum_x += x;
-						*sum_y += y;
-						(*count)++;
-						}
-				} 
-				if (*count == 0) {
-					dynamic_center_x = 0.0;
-					dynamic_center_y = 0.0;
-					} else {
-						dynamic_center_x = *sum_x / *count;
-						dynamic_center_y = *sum_y / *count;
-						}
+			//for (const auto& [x,y] : *dynamic_points) {
+			//	if (x == 0.0 && y == 0.0) {
+			//		continue;
+			//		} else {
+			//			*sum_x += x;
+			//			*sum_y += y;
+			//			(*count)++;
+			//			}
+			//	} 
+			//	if (*count == 0) {
+			//		dynamic_center_x = 0.0;
+			//		dynamic_center_y = 0.0;
+			//		} else {
+			//			dynamic_center_x = *sum_x / *count;
+			//			dynamic_center_y = *sum_y / *count;
+			//			}
 			
-			dynamic_center_x = x3;
-			dynamic_center_y = y3;
+			//dynamic_center_x = x3;
+			//dynamic_center_y = y3;
 			
 			*sum_x = 0.0;
 			*sum_y = 0.0;
@@ -114,43 +114,43 @@ class UWBTransform : public rclcpp::Node {
 			
 			// Initialize subscriptions
 			subscription_anc1 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/"+tag_frame+"/d_anc0", qos_anc,
+							"uwb/"+tag_frame+"d_anc0", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(1, msg);});
 			subscription_anc2 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/"+tag_frame+"/d_anc1", qos_anc,
+							"uwb/"+tag_frame+"d_anc1", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(2, msg);});
 			subscription_anc3 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/"+tag_frame+"/d_anc2", qos_anc,
+							"uwb/"+tag_frame+"d_anc2", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(3, msg);});
 			subscription_anc4 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/"+tag_frame+"/d_anc3", qos_anc,
+							"uwb/"+tag_frame+"d_anc3", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(4, msg);});
 			subscription_anc5 = this->create_subscription<example_interfaces::msg::Float64>(
-							"uwb/"+tag_frame+"/d_anc4", qos_anc,
+							"uwb/"+tag_frame+"d_anc4", qos_anc,
 							[this](const example_interfaces::msg::Float64::SharedPtr msg) {this->common_anc_callback(5, msg);});
-			publisher_dynamic1_4_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"/dyn_odom1_4_3", qos_odom);
-			publisher_dynamic1_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"/dyn_odom1_5_3", qos_odom);
-			publisher_dynamic4_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"/dyn_odom4_5_3", qos_odom);
-			publisher_static = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"/static_odom", qos_odom);
+			//publisher_dynamic1_4_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"dyn_odom1_4_3", qos_odom);
+			//publisher_dynamic1_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"dyn_odom1_5_3", qos_odom);
+			//publisher_dynamic4_5_3 = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"dyn_odom4_5_3", qos_odom);
+			publisher_static = this->create_publisher<nav_msgs::msg::Odometry>("uwb/"+tag_frame+"static_odom", qos_odom);
 			timer_ = this->create_wall_timer(50ms, std::bind(&UWBTransform::timer_callback, this));
-			delta_timer_ = this->create_wall_timer(33.33ms, std::bind(&UWBTransform::time_delta, this));
+			//delta_timer_ = this->create_wall_timer(33.33ms, std::bind(&UWBTransform::time_delta, this));
 			
 			// dynamic anchor_tf 
-			dynamic_anc_tf.header.stamp = this->get_clock()->now();
-			dynamic_anc_tf.header.frame_id = map_child_transform;
-			dynamic_anc_tf.child_frame_id = "dynamic_anc_link";
+			//dynamic_anc_tf.header.stamp = this->get_clock()->now();
+			//dynamic_anc_tf.header.frame_id = map_child_transform;
+			//dynamic_anc_tf.child_frame_id = "dynamic_anc_link";
 			
-			dynamic_anc_tf.transform.translation.x = dynamic_center_x;
-			dynamic_anc_tf.transform.translation.y = dynamic_center_y;
-			dynamic_anc_tf.transform.translation.z = 0.0;
+			//dynamic_anc_tf.transform.translation.x = dynamic_center_x;
+			//dynamic_anc_tf.transform.translation.y = dynamic_center_y;
+			//dynamic_anc_tf.transform.translation.z = 0.0;
 			
-			dynamic_anc_tf.transform.rotation.x = 0.0;
-			dynamic_anc_tf.transform.rotation.y = 0.0;
-			dynamic_anc_tf.transform.rotation.z = 0.0;
-			dynamic_anc_tf.transform.rotation.w = 1.0;
+			//dynamic_anc_tf.transform.rotation.x = 0.0;
+			//dynamic_anc_tf.transform.rotation.y = 0.0;
+			//dynamic_anc_tf.transform.rotation.z = 0.0;
+			//dynamic_anc_tf.transform.rotation.w = 1.0;
 			
-			dynamic_anc_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
-			dynamic_anc_broadcaster_->sendTransform(dynamic_anc_tf);
+			//dynamic_anc_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+			//dynamic_anc_broadcaster_->sendTransform(dynamic_anc_tf);
 			
 			// static transform representing map->odom substituting the global GNSS position in the absence of the latter.
 			static_anc_tf.header.stamp = this->get_clock()->now();
@@ -171,21 +171,21 @@ class UWBTransform : public rclcpp::Node {
 			
 			tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 			
-			dynamic_timer1_4_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization1_4_3, this));
-			dynamic_timer1_5_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization1_5_3, this));
-			dynamic_timer4_5_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization4_5_3, this));
+			//dynamic_timer1_4_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization1_4_3, this));
+			//dynamic_timer1_5_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization1_5_3, this));
+			//dynamic_timer4_5_3 = this->create_wall_timer(5ms, std::bind(&UWBTransform::dynamic_localization4_5_3, this));
 			static_timer_ = this->create_wall_timer(5ms, std::bind(&UWBTransform::static_localization, this));
 			}
 	
 	private:
 		std::mutex data_mutex;
-		nav_msgs::msg::Odometry dynamic_odom_msg1_4_3;
-		nav_msgs::msg::Odometry dynamic_odom_msg1_5_3;
-		nav_msgs::msg::Odometry dynamic_odom_msg4_5_3;
-		nav_msgs::msg::Odometry dynamic_odom_msg, dynamic_odom_msg_prev, delta;
+		//nav_msgs::msg::Odometry dynamic_odom_msg1_4_3;
+		//nav_msgs::msg::Odometry dynamic_odom_msg1_5_3;
+		//nav_msgs::msg::Odometry dynamic_odom_msg4_5_3;
+		//nav_msgs::msg::Odometry dynamic_odom_msg, dynamic_odom_msg_prev, delta;
 		nav_msgs::msg::Odometry static_odom_msg;
 		
-		double x_dynamic1_4_3 = 0.0, y_dynamic1_4_3 = 0.0, x_dynamic1_5_3 = 0.0, y_dynamic1_5_3 = 0.0, x_dynamic4_5_3 = 0.0, y_dynamic4_5_3 = 0.0;
+		//double x_dynamic1_4_3 = 0.0, y_dynamic1_4_3 = 0.0, x_dynamic1_5_3 = 0.0, y_dynamic1_5_3 = 0.0, x_dynamic4_5_3 = 0.0, y_dynamic4_5_3 = 0.0;
 		double x_static = 0.0, y_static = 0.0;
 		double x1 = 0.0, y1 = 0.0;
 		double x2 = 0.0, y2 = 0.0;
@@ -199,20 +199,20 @@ class UWBTransform : public rclcpp::Node {
 		double d2_prev = 0.0, d3_prev = 0.0;
 		//double uwb_center_x = (x1 + x2 + x3) / 3, uwb_center_y = (y1 + y2 + y3) / 3;
 		double static_center_x = 0.0, static_center_y = 0.0;
-		double dynamic_center_x = 0.0, dynamic_center_y = 0.0;
-		Eigen::Quaterniond q_static, q_dynamic1_4_3, q_dynamic1_5_3, q_dynamic4_5_3;
+		//double dynamic_center_x = 0.0, dynamic_center_y = 0.0;
+		Eigen::Quaterniond q_static;
 		std::optional<int> sign;
 		std::optional<int> sign_prev;
 		bool has_prev = false;
 		std::string map_child_transform;
 		std::string tag_frame;
 		
-		geometry_msgs::msg::TransformStamped dynamic_anc_tf, static_anc_tf;
+		geometry_msgs::msg::TransformStamped static_anc_tf;
 		
 		rclcpp::QoS qos_anc{rclcpp::KeepLast(3)};
 		rclcpp::QoS qos_odom{rclcpp::KeepLast(3)};
-		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_dynamic1_4_3, publisher_dynamic1_5_3, publisher_dynamic4_5_3, publisher_static;
-		rclcpp::TimerBase::SharedPtr timer_, delta_timer_, dynamic_timer1_4_3, dynamic_timer1_5_3, dynamic_timer4_5_3, static_timer_;
+		rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr publisher_static;
+		rclcpp::TimerBase::SharedPtr timer_, static_timer_;
 		
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc1;
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc2;
@@ -221,7 +221,7 @@ class UWBTransform : public rclcpp::Node {
 		rclcpp::Subscription<example_interfaces::msg::Float64>::SharedPtr subscription_anc5;
 		
 		Eigen::Vector2d pos_static;
-		Eigen::Vector2d pos_dynamic, pos_dynamic1_4_3, pos_dynamic1_5_3, pos_dynamic4_5_3;
+		//Eigen::Vector2d pos_dynamic, pos_dynamic1_4_3, pos_dynamic1_5_3, pos_dynamic4_5_3;
 		
 		std::shared_ptr<tf2_ros::StaticTransformBroadcaster> dynamic_anc_broadcaster_, static_anc_broadcaster_;
 		std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -436,32 +436,32 @@ class UWBTransform : public rclcpp::Node {
 		}
 
 
-		void dynamic_localization1_4_3() {
-			std::lock_guard<std::mutex> lock(data_mutex);
-			pos_dynamic1_4_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d1, d4, d3);
-			x_dynamic1_4_3 = pos_dynamic1_4_3[0];
-			y_dynamic1_4_3 = pos_dynamic1_4_3[1];
-			q_dynamic1_4_3 = this->calculateYaw(x_dynamic1_4_3, y_dynamic1_4_3);
-			//std::this_thread::sleep_for(5ms);
-		}
+		//void dynamic_localization1_4_3() {
+		//	std::lock_guard<std::mutex> lock(data_mutex);
+		//	pos_dynamic1_4_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d1, d4, d3);
+		//	x_dynamic1_4_3 = pos_dynamic1_4_3[0];
+		//	y_dynamic1_4_3 = pos_dynamic1_4_3[1];
+		//	q_dynamic1_4_3 = this->calculateYaw(x_dynamic1_4_3, y_dynamic1_4_3);
+		//	//std::this_thread::sleep_for(5ms);
+		//}
 		
-		void dynamic_localization1_5_3() {
-			std::lock_guard<std::mutex> lock(data_mutex);
-			pos_dynamic1_5_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d1, d5, d3);
-			x_dynamic1_5_3 = pos_dynamic1_5_3[0];
-			y_dynamic1_5_3 = pos_dynamic1_5_3[1];
-			q_dynamic1_5_3 = this->calculateYaw(x_dynamic1_5_3, y_dynamic1_5_3);
-			//std::this_thread::sleep_for(5ms);
-		}
+		//void dynamic_localization1_5_3() {
+		//	std::lock_guard<std::mutex> lock(data_mutex);
+		//	pos_dynamic1_5_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d1, d5, d3);
+		//	x_dynamic1_5_3 = pos_dynamic1_5_3[0];
+		//	y_dynamic1_5_3 = pos_dynamic1_5_3[1];
+		//	q_dynamic1_5_3 = this->calculateYaw(x_dynamic1_5_3, y_dynamic1_5_3);
+		//	//std::this_thread::sleep_for(5ms);
+		//}
 		
-		void dynamic_localization4_5_3() {
-			std::lock_guard<std::mutex> lock(data_mutex);
-			pos_dynamic4_5_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d4, d5, d3);
-			x_dynamic4_5_3 = pos_dynamic4_5_3[0];
-			y_dynamic4_5_3 = pos_dynamic4_5_3[1];
-			q_dynamic4_5_3 = this->calculateYaw(x_dynamic4_5_3, y_dynamic4_5_3);
-			//std::this_thread::sleep_for(5ms);
-		}
+		//void dynamic_localization4_5_3() {
+		//	std::lock_guard<std::mutex> lock(data_mutex);
+		//	pos_dynamic4_5_3 = this->calculate_3Point(Eigen::Vector2d(x1,y1), Eigen::Vector2d(x4,y4), Eigen::Vector2d(x3,y3), d4, d5, d3);
+		//	x_dynamic4_5_3 = pos_dynamic4_5_3[0];
+		//	y_dynamic4_5_3 = pos_dynamic4_5_3[1];
+		//	q_dynamic4_5_3 = this->calculateYaw(x_dynamic4_5_3, y_dynamic4_5_3);
+		//	//std::this_thread::sleep_for(5ms);
+		//}
 
 		void static_localization() {
 			std::lock_guard<std::mutex> lock(data_mutex);
@@ -475,118 +475,118 @@ class UWBTransform : public rclcpp::Node {
 		void timer_callback() {
 			std::lock_guard<std::mutex> lock(data_mutex);
 			
-			dynamic_odom_msg1_4_3.header.stamp = this->get_clock()->now();
-			dynamic_odom_msg1_5_3.header.stamp = this->get_clock()->now();
-			dynamic_odom_msg4_5_3.header.stamp = this->get_clock()->now();
+			//dynamic_odom_msg1_4_3.header.stamp = this->get_clock()->now();
+			//dynamic_odom_msg1_5_3.header.stamp = this->get_clock()->now();
+			//dynamic_odom_msg4_5_3.header.stamp = this->get_clock()->now();
 			
-			static_odom_msg.header.stamp = dynamic_odom_msg.header.stamp;
+			static_odom_msg.header.stamp = this->get_clock()->now();
 			
-			dynamic_odom_msg1_4_3.header.frame_id = map_child_transform;
-			dynamic_odom_msg1_4_3.child_frame_id  = tag_frame;
-			dynamic_odom_msg1_5_3.header.frame_id = map_child_transform;
-			dynamic_odom_msg1_5_3.child_frame_id  = tag_frame;
-			dynamic_odom_msg4_5_3.header.frame_id = map_child_transform;
-			dynamic_odom_msg1_4_3.child_frame_id  = tag_frame;
+			//dynamic_odom_msg1_4_3.header.frame_id = map_child_transform;
+			//dynamic_odom_msg1_4_3.child_frame_id  = tag_frame;
+			//dynamic_odom_msg1_5_3.header.frame_id = map_child_transform;
+			//dynamic_odom_msg1_5_3.child_frame_id  = tag_frame;
+			//dynamic_odom_msg4_5_3.header.frame_id = map_child_transform;
+			//dynamic_odom_msg1_4_3.child_frame_id  = tag_frame;
 			
 			static_odom_msg.header.frame_id = map_child_transform;
-			static_odom_msg.child_frame_id  = tag_frame;
+			static_odom_msg.child_frame_id  = "tag_link";
 			
 			// Translation
-			dynamic_odom_msg1_4_3.pose.pose.position.x = x_dynamic1_4_3;
-			dynamic_odom_msg1_4_3.pose.pose.position.y = y_dynamic1_4_3;
-			dynamic_odom_msg1_4_3.pose.pose.position.z = 0.0;
-			dynamic_odom_msg1_5_3.pose.pose.position.x = x_dynamic1_5_3;
-			dynamic_odom_msg1_5_3.pose.pose.position.y = y_dynamic1_5_3;
-			dynamic_odom_msg1_5_3.pose.pose.position.z = 0.0;
-			dynamic_odom_msg4_5_3.pose.pose.position.x = x_dynamic4_5_3;
-			dynamic_odom_msg4_5_3.pose.pose.position.y = y_dynamic4_5_3;
-			dynamic_odom_msg4_5_3.pose.pose.position.z = 0.0;
+			//dynamic_odom_msg1_4_3.pose.pose.position.x = x_dynamic1_4_3;
+			//dynamic_odom_msg1_4_3.pose.pose.position.y = y_dynamic1_4_3;
+			//dynamic_odom_msg1_4_3.pose.pose.position.z = 0.0;
+			//dynamic_odom_msg1_5_3.pose.pose.position.x = x_dynamic1_5_3;
+			//dynamic_odom_msg1_5_3.pose.pose.position.y = y_dynamic1_5_3;
+			//dynamic_odom_msg1_5_3.pose.pose.position.z = 0.0;
+			//dynamic_odom_msg4_5_3.pose.pose.position.x = x_dynamic4_5_3;
+			//dynamic_odom_msg4_5_3.pose.pose.position.y = y_dynamic4_5_3;
+			//dynamic_odom_msg4_5_3.pose.pose.position.z = 0.0;
 			
 			static_odom_msg.pose.pose.position.x = x_static;
 			static_odom_msg.pose.pose.position.y = y_static;
 			static_odom_msg.pose.pose.position.z = 0.0;
 			
 			// Tag orientation wrt the uwb anchor positions (x1,y1),(x2,y2) and (x3,y3)
-			dynamic_odom_msg1_4_3.pose.pose.orientation.x = q_dynamic1_4_3.x();
-			dynamic_odom_msg1_4_3.pose.pose.orientation.y = q_dynamic1_4_3.y();
-			dynamic_odom_msg1_4_3.pose.pose.orientation.z = q_dynamic1_4_3.z();
-			dynamic_odom_msg1_4_3.pose.pose.orientation.w = q_dynamic1_4_3.w();
-			dynamic_odom_msg1_5_3.pose.pose.orientation.x = q_dynamic1_5_3.x();
-			dynamic_odom_msg1_5_3.pose.pose.orientation.y = q_dynamic1_5_3.y();
-			dynamic_odom_msg1_5_3.pose.pose.orientation.z = q_dynamic1_5_3.z();
-			dynamic_odom_msg1_5_3.pose.pose.orientation.w = q_dynamic1_5_3.w();
-			dynamic_odom_msg4_5_3.pose.pose.orientation.x = q_dynamic4_5_3.x();
-			dynamic_odom_msg4_5_3.pose.pose.orientation.y = q_dynamic4_5_3.y();
-			dynamic_odom_msg4_5_3.pose.pose.orientation.z = q_dynamic4_5_3.z();
-			dynamic_odom_msg4_5_3.pose.pose.orientation.w = q_dynamic4_5_3.w();
+			//dynamic_odom_msg1_4_3.pose.pose.orientation.x = q_dynamic1_4_3.x();
+			//dynamic_odom_msg1_4_3.pose.pose.orientation.y = q_dynamic1_4_3.y();
+			//dynamic_odom_msg1_4_3.pose.pose.orientation.z = q_dynamic1_4_3.z();
+			//dynamic_odom_msg1_4_3.pose.pose.orientation.w = q_dynamic1_4_3.w();
+			//dynamic_odom_msg1_5_3.pose.pose.orientation.x = q_dynamic1_5_3.x();
+			//dynamic_odom_msg1_5_3.pose.pose.orientation.y = q_dynamic1_5_3.y();
+			//dynamic_odom_msg1_5_3.pose.pose.orientation.z = q_dynamic1_5_3.z();
+			//dynamic_odom_msg1_5_3.pose.pose.orientation.w = q_dynamic1_5_3.w();
+			//dynamic_odom_msg4_5_3.pose.pose.orientation.x = q_dynamic4_5_3.x();
+			//dynamic_odom_msg4_5_3.pose.pose.orientation.y = q_dynamic4_5_3.y();
+			//dynamic_odom_msg4_5_3.pose.pose.orientation.z = q_dynamic4_5_3.z();
+			//dynamic_odom_msg4_5_3.pose.pose.orientation.w = q_dynamic4_5_3.w();
 			
 			static_odom_msg.pose.pose.orientation.x = q_static.x();
 			static_odom_msg.pose.pose.orientation.y = q_static.y();
 			static_odom_msg.pose.pose.orientation.z = q_static.z();
 			static_odom_msg.pose.pose.orientation.w = q_static.w();
 			
-			dynamic_odom_msg1_4_3.twist.twist.linear.x = 0;
-			dynamic_odom_msg1_4_3.twist.twist.linear.y = 0;
-			dynamic_odom_msg1_4_3.twist.twist.linear.z = 0;
-			dynamic_odom_msg1_5_3.twist.twist.linear.x = 0;
-			dynamic_odom_msg1_5_3.twist.twist.linear.y = 0;
-			dynamic_odom_msg1_5_3.twist.twist.linear.z = 0;
-			dynamic_odom_msg4_5_3.twist.twist.linear.x = 0;
-			dynamic_odom_msg4_5_3.twist.twist.linear.y = 0;
-			dynamic_odom_msg4_5_3.twist.twist.linear.z = 0;
+			//dynamic_odom_msg1_4_3.twist.twist.linear.x = 0;
+			//dynamic_odom_msg1_4_3.twist.twist.linear.y = 0;
+			//dynamic_odom_msg1_4_3.twist.twist.linear.z = 0;
+			//dynamic_odom_msg1_5_3.twist.twist.linear.x = 0;
+			//dynamic_odom_msg1_5_3.twist.twist.linear.y = 0;
+			//dynamic_odom_msg1_5_3.twist.twist.linear.z = 0;
+			//dynamic_odom_msg4_5_3.twist.twist.linear.x = 0;
+			//dynamic_odom_msg4_5_3.twist.twist.linear.y = 0;
+			//dynamic_odom_msg4_5_3.twist.twist.linear.z = 0;
 			
 			static_odom_msg.twist.twist.linear.x = 0;
 			static_odom_msg.twist.twist.linear.y = 0;
 			static_odom_msg.twist.twist.linear.z = 0;
 			
-			dynamic_odom_msg1_4_3.pose.covariance = {
-					0.05, 0, 0, 0, 0, 0,
-					0, 0.05, 0, 0, 0, 0,
-					0, 0, 1e6, 0, 0, 0,
-					0, 0, 0, 1e6, 0, 0,
-					0, 0, 0, 0, 1e6, 0,
-					0, 0, 0, 0, 0, 1e6
-				};
-			dynamic_odom_msg1_5_3.pose.covariance = {
-					0.05, 0, 0, 0, 0, 0,
-					0, 0.05, 0, 0, 0, 0,
-					0, 0, 1e6, 0, 0, 0,
-					0, 0, 0, 1e6, 0, 0,
-					0, 0, 0, 0, 1e6, 0,
-					0, 0, 0, 0, 0, 1e6
-				};
-			dynamic_odom_msg4_5_3.pose.covariance = {
-					0.05, 0, 0, 0, 0, 0,
-					0, 0.05, 0, 0, 0, 0,
-					0, 0, 1e6, 0, 0, 0,
-					0, 0, 0, 1e6, 0, 0,
-					0, 0, 0, 0, 1e6, 0,
-					0, 0, 0, 0, 0, 1e6
-				};
-			dynamic_odom_msg1_4_3.twist.covariance = {
-					99999, 0, 0, 0, 0, 0,
-					0, 99999, 0, 0, 0, 0,
-					0, 0, 99999, 0, 0, 0,
-					0, 0, 0, 99999, 0, 0,
-					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 99999
-				};
-			dynamic_odom_msg1_5_3.twist.covariance = {
-					99999, 0, 0, 0, 0, 0,
-					0, 99999, 0, 0, 0, 0,
-					0, 0, 99999, 0, 0, 0,
-					0, 0, 0, 99999, 0, 0,
-					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 99999
-				};
-			dynamic_odom_msg4_5_3.twist.covariance = {
-					99999, 0, 0, 0, 0, 0,
-					0, 99999, 0, 0, 0, 0,
-					0, 0, 99999, 0, 0, 0,
-					0, 0, 0, 99999, 0, 0,
-					0, 0, 0, 0, 99999, 0,
-					0, 0, 0, 0, 0, 99999
-				};
+			//dynamic_odom_msg1_4_3.pose.covariance = {
+			//		0.05, 0, 0, 0, 0, 0,
+			//		0, 0.05, 0, 0, 0, 0,
+			//		0, 0, 1e6, 0, 0, 0,
+			//		0, 0, 0, 1e6, 0, 0,
+			//		0, 0, 0, 0, 1e6, 0,
+			//		0, 0, 0, 0, 0, 1e6
+			//	};
+			//dynamic_odom_msg1_5_3.pose.covariance = {
+			//		0.05, 0, 0, 0, 0, 0,
+			//		0, 0.05, 0, 0, 0, 0,
+			//		0, 0, 1e6, 0, 0, 0,
+			//		0, 0, 0, 1e6, 0, 0,
+			//		0, 0, 0, 0, 1e6, 0,
+			//		0, 0, 0, 0, 0, 1e6
+			//	};
+			//dynamic_odom_msg4_5_3.pose.covariance = {
+			//		0.05, 0, 0, 0, 0, 0,
+			//		0, 0.05, 0, 0, 0, 0,
+			//		0, 0, 1e6, 0, 0, 0,
+			//		0, 0, 0, 1e6, 0, 0,
+			//		0, 0, 0, 0, 1e6, 0,
+			//		0, 0, 0, 0, 0, 1e6
+			//	};
+			//dynamic_odom_msg1_4_3.twist.covariance = {
+			//		99999, 0, 0, 0, 0, 0,
+			//		0, 99999, 0, 0, 0, 0,
+			//		0, 0, 99999, 0, 0, 0,
+			//		0, 0, 0, 99999, 0, 0,
+			//		0, 0, 0, 0, 99999, 0,
+			//		0, 0, 0, 0, 0, 99999
+			//	};
+			//dynamic_odom_msg1_5_3.twist.covariance = {
+			//		99999, 0, 0, 0, 0, 0,
+			//		0, 99999, 0, 0, 0, 0,
+			//		0, 0, 99999, 0, 0, 0,
+			//		0, 0, 0, 99999, 0, 0,
+			//		0, 0, 0, 0, 99999, 0,
+			//		0, 0, 0, 0, 0, 99999
+			//	};
+			//dynamic_odom_msg4_5_3.twist.covariance = {
+			//		99999, 0, 0, 0, 0, 0,
+			//		0, 99999, 0, 0, 0, 0,
+			//		0, 0, 99999, 0, 0, 0,
+			//		0, 0, 0, 99999, 0, 0,
+			//		0, 0, 0, 0, 99999, 0,
+			//		0, 0, 0, 0, 0, 99999
+			//	};
 		
 			static_odom_msg.pose.covariance = {
 					0.08, 0, 0, 0, 0, 0,
@@ -606,9 +606,9 @@ class UWBTransform : public rclcpp::Node {
 				};
 			
 			publisher_static->publish(static_odom_msg);
-			publisher_dynamic1_4_3->publish(dynamic_odom_msg1_4_3);
-			publisher_dynamic1_5_3->publish(dynamic_odom_msg1_5_3);
-			publisher_dynamic4_5_3->publish(dynamic_odom_msg4_5_3);
+			//publisher_dynamic1_4_3->publish(dynamic_odom_msg1_4_3);
+			//publisher_dynamic1_5_3->publish(dynamic_odom_msg1_5_3);
+			//publisher_dynamic4_5_3->publish(dynamic_odom_msg4_5_3);
 		}
 	};
 
