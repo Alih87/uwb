@@ -162,7 +162,7 @@ controller_server:
     FollowPath_MPPI:
       plugin: "nav2_mppi_controller::MPPIController"
       time_steps: 56
-      model_dt: 0.1
+      model_dt: 0.2
       batch_size: 2000
       ax_max: 3.0
       ax_min: -3.0
@@ -285,7 +285,7 @@ local_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 16.0
-        inflation_radius: 0.10
+        inflation_radius: 0.6
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: true
@@ -376,7 +376,7 @@ global_costmap:
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 16.0
-        inflation_radius: 0.10
+        inflation_radius: 0.6
       always_send_full_costmap: true
       introspection_mode: "disabled"
 

@@ -219,7 +219,7 @@ def generate_launch_description():
     )
 
     ublox_config_directory = os.path.join(get_package_share_directory("ublox_gps"), "config")
-    ublox_params = os.path.join(get_package_share_directory("ublox_gps"), "params", "zed_f9p.yaml")
+    ublox_params = os.path.join(get_package_share_directory("uwb_test"), "params", "zed_f9p.yaml")
     ublox_gps_node = Node(
         package="ublox_gps",
         executable="ublox_gps_node",
@@ -345,8 +345,8 @@ def generate_launch_description():
         # Static TFs
         static_base_imu,
         static_base_gnss,
-        static_base_camera,
-        static_base_tag,
+        #static_base_camera,
+        #static_base_tag,
 
         scout_base_node,
         ublox_gps_node,
@@ -354,8 +354,8 @@ def generate_launch_description():
         baselink_transformer,
 
         # rplidar_ros_node,
-        uwb_rcv_single_node,
-        tag_ekf_launch,
+        #uwb_rcv_single_node,
+        #tag_ekf_launch,
         # realsense_launch,
         # dynamic_tf_node,
 
