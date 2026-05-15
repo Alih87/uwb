@@ -55,6 +55,13 @@ ament_target_dependencies(n2p rclcpp rclcpp_action tf2_ros tf2_geometry_msgs nav
 add_executable(ransac_ src/ransac_plane.cpp)
 ament_target_dependencies(ransac_ rclcpp std_msgs geometry_msgs sensor_msgs cv_bridge visualization_msgs pcl_ros)
 
+add_executable(gps_odom_to_map_frame src/odom_to_map_frame.cpp)
+ament_target_dependencies(
+  gps_odom_to_map_frame
+  rclcpp
+  nav_msgs
+)
+
 target_link_libraries(uwb_node serial)
 target_link_libraries(uwb_rcv serial)
 target_link_libraries(uwb_rcv_single serial)
@@ -67,6 +74,8 @@ target_link_libraries(ransac_)
 target_link_libraries(ransac_
   ${PCL_LIBRARIES}
 )
+
+
 
 install(TARGETS uwb_node
 DESTINATION lib/${PROJECT_NAME}
@@ -110,6 +119,11 @@ DESTINATION share/${PROJECT_NAME}
 
 install(DIRECTORY config
 DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  TARGETS gps_odom_to_map_frame
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 if(BUILD_TESTING)

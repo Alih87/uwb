@@ -297,11 +297,26 @@ def generate_launch_description():
         output="screen",
         parameters=[DUAL_EKF_NAVSAT_PARAMS],
         remappings=[
-            ("odometry/filtered", "scout/odom_filtered"),
-            ("gps/fix", "/ublox_gps_node/fix"),
+            ("/odometry/filtered", "/scout/odom_filtered"),
+            ("/gps/fix", "/ublox_gps_node/fix"),
             ("/imu", "/imu/data"),
         ],
     )
+    
+    odom_to_gps_frame = Node(
+    package="uwb_test",
+    executable="gps_odom_to_map_frame",
+    name="odom_to_gps_frame",
+    output="screen",
+    parameters=[{
+        "input_topic": "/odometry/gps",
+        "output_topic": "/odometry/gps_map",
+        "frame_id": "map",
+        "child_frame_id": "base_link",
+        "xy_variance_floor": 0.01,
+        "z_variance_floor": 0.04,
+    }]
+)
 
     ekf_filter_node_map = Node(
         package="robot_localization",
@@ -340,6 +355,12 @@ def generate_launch_description():
         ["/scout/map|nav_msgs/msg/Odometry|3|3.0"],
         stable_for=3.0,
     )
+    
+    gate_gps_map = make_gate(
+    "GPS map odom stable",
+    ["/odometry/gps_map|nav_msgs/msg/Odometry|3|3.0"],
+    stable_for=3.0,
+)
 
     return LaunchDescription(declare_args + [
         # Static TFs
@@ -383,25 +404,26 @@ def generate_launch_description():
             )
         ),
         RegisterEventHandler(
-            OnProcessExit(
-                target_action=gate_navsat,
-                on_exit=[
-                    LogInfo(msg="[stage] navsat stable -> starting global EKF"),
-                    ekf_filter_node_map,
-                    gate_global_ekf,
-                ],
-            )
-        ),
-        RegisterEventHandler(
-            OnProcessExit(
-                target_action=gate_global_ekf,
-                on_exit=[
-                    LogInfo(msg="[stage] global EKF stable -> starting RViz"),
-                    #rviz2_node,
-                    nav2_bringup_launch,
-                ],
-            )
-        ),
+			OnProcessExit(
+				target_action=gate_navsat,
+				on_exit=[
+					LogInfo(msg="[stage] navsat stable -> starting odom_to_gps_frame"),
+					odom_to_gps_frame,
+					gate_gps_map,
+				],
+			)
+		),
+       RegisterEventHandler(
+			OnProcessExit(
+				target_action=gate_gps_map,
+				on_exit=[
+					LogInfo(msg="[stage] gps_map stable -> starting global EKF"),
+					ekf_filter_node_map,
+					nav2_bringup_launch,
+					gate_global_ekf,
+				],
+			)
+		),
     ])
 
 
